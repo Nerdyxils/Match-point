@@ -46,6 +46,22 @@ body {
     opacity: 0.8;
     margin-bottom: 1rem;
   }
+
+  .next-button {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(8px);
+    border: 1px solid #fff;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+  }
+  
+  .next-button:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+  }
+
   
   .options {
     display: flex;

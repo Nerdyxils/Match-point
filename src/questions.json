@@ -30,7 +30,7 @@
         { "label": "Gifts?", "value": "d" },
         { "label": "Quality time", "value": "c" }
       ],
-      "multiSelect": false
+      "multiSelect": true
     },
     {
       "id": "q4",
@@ -62,7 +62,7 @@
         { "label": "Disrespectful behavior", "value": "d" },
         { "label": "Poor Hygiene", "value": "e" }
       ],
-      "multiSelect": false
+      "multiSelect": true
     },
     {
       "id": "q7",
@@ -92,7 +92,7 @@
         { "label": "Fun and connection", "value": "b" },
         { "label": "Shared goals and values", "value": "c" }
       ],
-      "multiSelect": false
+      "multiSelect": true
     },
     {
       "id": "q10",
@@ -113,7 +113,7 @@
         { "label": "I’m content with comfort and stability.", "value": "c" },
         { "label": "I focus on peace and living in the moment.", "value": "d" }
       ],
-      "multiSelect": false
+      "multiSelect": true
     },
     {
       "id": "q12",
@@ -179,7 +179,7 @@
         { "label": "Deep dives into dreams and ideas.", "value": "c" },
         { "label": "Casual chats, nothing heavy.", "value": "d" }
       ],
-      "multiSelect": false
+      "multiSelect": true
     },
     {
       "id": "q18",
@@ -223,7 +223,7 @@
         { "label": "Happiness matters more than labels.", "value": "c" },
         { "label": "I’m open but not rushing into it.", "value": "d" }
       ],
-      "multiSelect": false
+      "multiSelect": true
     },
     {
       "id": "q22",
@@ -240,10 +240,10 @@
       "id": "q23",
       "question": "How do you feel about a partner earning significantly more?",
       "options": [
-        { "label": "Great—teamwork makes the dream work!", "value": "a" },
+        { "label": "Great—teamwork makes the dream work!", "value": "d" },
         { "label": "Fine, as long as respect is mutual.", "value": "b" },
         { "label": "I’d rather we earn similarly.", "value": "c" },
-        { "label": "It could create tension for me.", "value": "d" }
+        { "label": "It could create tension for me.", "value": "a" }
       ],
       "multiSelect": false
     },
@@ -256,13 +256,13 @@
         { "label": "We’ll do it when we feel like it.", "value": "c" },
         { "label": "Outsource it—hire help!", "value": "d" }
       ],
-      "multiSelect": false
+      "multiSelect": true
     },
     {
       "id": "q25",
       "question": "What’s your dream family size?",
       "options": [
-        { "label": "2-3 kids, the sweet spot.", "value": "a" },
+        { "label": "1-3 (max) kids, the sweet spot.", "value": "a" },
         { "label": "One kid, focused and intentional.", "value": "b" },
         { "label": "Big family—4 or more!", "value": "c" },
         { "label": "No kids, or I’m still unsure.", "value": "d" }
@@ -273,9 +273,9 @@
       "id": "q26",
       "question": "What’s your parenting philosophy?",
       "options": [
-        { "label": "Nurturing, with a focus on independence.", "value": "a" },
+        { "label": "Nurturing, with a focus on independence.", "value": "c" },
         { "label": "Balanced—structure with flexibility.", "value": "b" },
-        { "label": "Firm—discipline builds character.", "value": "c" },
+        { "label": "Firm—discipline builds character.", "value": "a" },
         { "label": "I’ll adapt when the time comes.", "value": "d" }
       ],
       "multiSelect": false
@@ -317,10 +317,10 @@
       "id": "q30",
       "question": "Which quote resonates with your relationship vibe?",
       "options": [
-        { "label": "“Together, we’re unstoppable.”", "value": "a" },
+        { "label": "“Together, we’re unstoppable.”", "value": "d" },
         { "label": "“Love is our greatest adventure.”", "value": "b" },
         { "label": "“We grow, we laugh, we thrive.”", "value": "c" },
-        { "label": "“Let’s keep it real and roll with it.”", "value": "d" }
+        { "label": "“Let’s keep it real and roll with it.”", "value": "a" }
       ],
       "multiSelect": false
     },

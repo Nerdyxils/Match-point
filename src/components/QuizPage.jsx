@@ -7,37 +7,43 @@ import "./styles/QuizPage.css";
 export default function QuizPage({ questions, answers, onAnswerChange, onSubmit }) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
 
+  const question = questions[currentQuestion];
+  const selectedAnswers = Array.isArray(answers[question.id])
+    ? answers[question.id]
+    : question.multiSelect
+    ? []
+    : answers[question.id] || [];
+
   const handleAnswer = (value) => {
-    const question = questions[currentQuestion];
-    let newAnswers = Array.isArray(answers[question.id]) ? [...answers[question.id]] : [];
+    let newAnswers = Array.isArray(selectedAnswers) ? [...selectedAnswers] : [];
 
     if (question.multiSelect) {
       if (newAnswers.includes(value)) {
-        // Deselect if already selected
         newAnswers = newAnswers.filter((ans) => ans !== value);
-      } else if (newAnswers.length < 2) {
-        // Add new answer if less than 2 selected
-        newAnswers.push(value);
       } else {
-        // Replace the oldest answer if 2 are already selected
-        newAnswers.shift();
         newAnswers.push(value);
       }
+      onAnswerChange(question.id, newAnswers);
     } else {
-      // Single-select: set the answer directly
       newAnswers = [value];
+      onAnswerChange(question.id, newAnswers[0]);
+
+      // Auto-advance for single-select
+      if (currentQuestion < questions.length - 1) {
+        setTimeout(() => setCurrentQuestion((prev) => prev + 1), 400);
+      } else {
+        onSubmit();
+      }
     }
+  };
 
-    onAnswerChange(question.id, question.multiSelect ? newAnswers : newAnswers[0]);
-
+  const handleNext = () => {
     if (currentQuestion < questions.length - 1) {
-      setTimeout(() => setCurrentQuestion((prev) => prev + 1), 400);
+      setCurrentQuestion((prev) => prev + 1);
     } else {
       onSubmit();
     }
   };
-
-  const question = questions[currentQuestion];
 
   return (
     <div className="quiz-page">
@@ -60,21 +66,41 @@ export default function QuizPage({ questions, answers, onAnswerChange, onSubmit 
                 <button
                   key={index}
                   className={`option-button ${
-                    Array.isArray(answers[question.id]) && answers[question.id].includes(option.value)
+                    Array.isArray(selectedAnswers) && selectedAnswers.includes(option.value)
                       ? "selected"
                       : ""
                   } ${
-                    question.multiSelect && Array.isArray(answers[question.id]) && answers[question.id].length >= 2 && !answers[question.id].includes(option.value)
+                    question.multiSelect &&
+                    Array.isArray(selectedAnswers) &&
+                    selectedAnswers.length >= 2 &&
+                    !selectedAnswers.includes(option.value)
                       ? "disabled"
                       : ""
                   }`}
                   onClick={() => handleAnswer(option.value)}
-                  disabled={question.multiSelect && Array.isArray(answers[question.id]) && answers[question.id].length >= 2 && !answers[question.id].includes(option.value)}
+                  disabled={
+                    question.multiSelect &&
+                    Array.isArray(selectedAnswers) &&
+                    selectedAnswers.length >= 2 &&
+                    !selectedAnswers.includes(option.value)
+                  }
                 >
                   <span className="checkmark">✔</span> {option.label}
                 </button>
               ))}
             </div>
+
+            {/* Only show Next button for multiSelect questions */}
+            {question.multiSelect && selectedAnswers.length > 0 && (
+              <Button
+                className="next-button mt-4"
+                onClick={handleNext}
+                disabled={selectedAnswers.length === 0}
+              >
+                Next
+              </Button>
+            )}
+
             <div className="progress">
               {currentQuestion + 1} / {questions.length}
             </div>

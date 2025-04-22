@@ -10,8 +10,8 @@ export default function ResultPage({ score, userName, onRestart }) {
 
   useEffect(() => {
     if (isMatch) {
-      const audio = new Audio("/success.mp3");
-      audio.play();
+      // const audio = new Audio("/success.mp3");
+      // audio.play();
       const confetti = new JSConfetti();
       confetti.addConfetti({
         emojis: ["💖", "🌸", "✨"],
