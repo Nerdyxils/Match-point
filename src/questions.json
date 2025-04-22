@@ -1,0 +1,338 @@
+[
+    {
+      "id": "q1",
+      "question": "What's your ideal way to spend a weekend?",
+      "options": [
+        { "label": "Binge-watch shows with takeout", "value": "a" },
+        { "label": "Out exploring the city", "value": "b" },
+        { "label": "Reading or doing something chill at home", "value": "c" },
+        { "label": "Mixed of all, depending on the vibe", "value": "d" }
+      ],
+      "multiSelect": false
+    },
+    {
+      "id": "q2",
+      "question": "How do you prefer to communicate in a relationship?",
+      "options": [
+        { "label": "Texting all day", "value": "a" },
+        { "label": "Phone calls & FaceTime", "value": "b" },
+        { "label": "I'm open to all'", "value": "c" },
+        { "label": "In person only", "value": "d" }
+      ],
+      "multiSelect": false
+    },
+    {
+      "id": "q3",
+      "question": "Your love language?",
+      "options": [
+        { "label": "Words of affirmation", "value": "a" },
+        { "label": "Physical touch", "value": "b" },
+        { "label": "Gifts?", "value": "d" },
+        { "label": "Quality time", "value": "c" }
+      ],
+      "multiSelect": false
+    },
+    {
+      "id": "q4",
+      "question": "Do you believe in astrology?",
+      "options": [
+        { "label": "Absolutely, it's real!", "value": "a" },
+        { "label": "It's fun, but not serious", "value": "b" },
+        { "label": "Nah, not my thing", "value": "c" }
+      ],
+      "multiSelect": false
+    },
+    {
+      "id": "q5",
+      "question": "What’s your take on posting each other on socials?",
+      "options": [
+        { "label": "Post me or we got problems 😤", "value": "a" },
+        { "label": "Post if it feels right", "value": "b" },
+        { "label": "I'd rather keep things private", "value": "c" }
+      ],
+      "multiSelect": false
+    },
+    {
+      "id": "q6",
+      "question": "Biggest turn-off in someone?",
+      "options": [
+        { "label": "Lack of ambition", "value": "a" },
+        { "label": "Poor communication", "value": "b" },
+        { "label": "Too clingy", "value": "c" },
+        { "label": "Disrespectful behavior", "value": "d" },
+        { "label": "Poor Hygiene", "value": "e" }
+      ],
+      "multiSelect": false
+    },
+    {
+      "id": "q7",
+      "question": "Your idea of fun together?",
+      "options": [
+        { "label": "Trying new restaurants or traveling", "value": "a" },
+        { "label": "Game nights or indoor dates", "value": "b" },
+        { "label": "Anything spontaneous", "value": "c" }
+      ],
+      "multiSelect": false
+    },
+    {
+      "id": "q8",
+      "question": "How do you handle conflict?",
+      "options": [
+        { "label": "Talk it out immediately", "value": "a" },
+        { "label": "Take space and revisit later", "value": "b" },
+        { "label": "Let it blow over naturally", "value": "c" }
+      ],
+      "multiSelect": false
+    },
+    {
+      "id": "q9",
+      "question": "What’s most important in a partner?",
+      "options": [
+        { "label": "Loyalty and trust", "value": "a" },
+        { "label": "Fun and connection", "value": "b" },
+        { "label": "Shared goals and values", "value": "c" }
+      ],
+      "multiSelect": false
+    },
+    {
+      "id": "q10",
+      "question": "Be honest — are you more romantic or logical?",
+      "options": [
+        { "label": "Romantic all the way 💘", "value": "a" },
+        { "label": "Balanced mix", "value": "b" },
+        { "label": "Head over heart", "value": "c" }
+      ],
+      "multiSelect": false
+    },
+    {
+      "id": "q11",
+      "question": "How do you approach personal growth and ambition?",
+      "options": [
+        { "label": "I’m always chasing big goals and self-improvement.", "value": "a" },
+        { "label": "I grow steadily but prioritize balance.", "value": "b" },
+        { "label": "I’m content with comfort and stability.", "value": "c" },
+        { "label": "I focus on peace and living in the moment.", "value": "d" }
+      ],
+      "multiSelect": false
+    },
+    {
+      "id": "q12",
+      "question": "What’s your stance on trying new experiences?",
+      "options": [
+        { "label": "I’m all about new adventures and learning.", "value": "a" },
+        { "label": "I try new things when they spark my interest.", "value": "b" },
+        { "label": "I stick to what I know and love.", "value": "c" },
+        { "label": "New experiences? I’m good, thanks.", "value": "d" }
+      ],
+      "multiSelect": false
+    },
+    {
+      "id": "q13",
+      "question": "How do you view money in a relationship?",
+      "options": [
+        { "label": "Split evenly, keep it fair.", "value": "a" },
+        { "label": "We pool resources for shared goals.", "value": "b" },
+        { "label": "One leads, the other supports differently.", "value": "c" },
+        { "label": "Keep finances separate, no drama.", "value": "d" }
+      ],
+      "multiSelect": false
+    },
+    {
+      "id": "q14",
+      "question": "What’s your go-to travel vibe?",
+      "options": [
+        { "label": "Backpacking and spontaneous adventures.", "value": "a" },
+        { "label": "Local getaways, nothing too far.", "value": "c" },
+        { "label": "Staycations—I’m happiest at home.", "value": "b" },
+        { "label": "Luxury resorts and planned itineraries.", "value": "d" }
+    ],
+    "multiSelect": false
+    },
+    {
+      "id": "q15",
+      "question": "What kind of humor do you vibe with most?",
+      "options": [
+        { "label": "Witty sarcasm and clever banter.", "value": "a" },
+        { "label": "Silly memes and lighthearted jokes.", "value": "b" },
+        { "label": "Dark humor with a sharp edge.", "value": "c" },
+        { "label": "I’m more serious—humor’s not my thing.", "value": "d" }
+      ],
+      "multiSelect": false
+    },
+    {
+      "id": "q16",
+      "question": "How do you react to a partner’s creative passion project?",
+      "options": [
+        { "label": "I’m their biggest fan and brainstorm buddy.", "value": "a" },
+        { "label": "I’ll cheer but won’t get too involved.", "value": "b" },
+        { "label": "I’m supportive but keep it low-key.", "value": "c" },
+        { "label": "I don’t really get into their projects.", "value": "d" }
+      ],
+      "multiSelect": false
+    },
+    {
+      "id": "q17",
+      "question": "What’s your ideal conversation style with a partner?",
+      "options": [
+        { "label": "Playful teasing and quick wit.", "value": "b" },
+        { "label": "Heartfelt talks about emotions.", "value": "a" },
+        { "label": "Deep dives into dreams and ideas.", "value": "c" },
+        { "label": "Casual chats, nothing heavy.", "value": "d" }
+      ],
+      "multiSelect": false
+    },
+    {
+      "id": "q18",
+      "question": "What’s a dealbreaker in a relationship for you?",
+      "options": [
+        { "label": "Dishonesty or betrayal.", "value": "a" },
+        { "label": "Lack of emotional connection.", "value": "b" },
+        { "label": "Clashing life goals or values.", "value": "c" },
+        { "label": "Neediness or lack of independence.", "value": "d" }
+      ],
+      "multiSelect": false
+    },
+    {
+      "id": "q19",
+      "question": "How do you feel about public displays of affection?",
+      "options": [
+        { "label": "Love it—show the world we’re together!", "value": "a" },
+        { "label": "A little is cute, but not over the top.", "value": "b" },
+        { "label": "I’m okay with subtle gestures only.", "value": "c" },
+        { "label": "PDA? Hard pass, keep it private.", "value": "d" }
+      ],
+      "multiSelect": false
+    },
+    {
+      "id": "q20",
+      "question": "What’s your approach to fitness and health?",
+      "options": [
+        { "label": "I’m all in—gym, diet, the works.", "value": "a" },
+        { "label": "I stay active but don’t obsess.", "value": "b" },
+        { "label": "I do the basics to stay healthy.", "value": "c" },
+        { "label": "Fitness? I’ll pass, life’s too short.", "value": "d" }
+      ],
+      "multiSelect": false
+    },
+    {
+      "id": "q21",
+      "question": "What’s your take on marriage or long-term commitment?",
+      "options": [
+        { "label": "We’re a team, building a legacy together.", "value": "a" },
+        { "label": "Love and balance, with room to grow.", "value": "b" },
+        { "label": "Happiness matters more than labels.", "value": "c" },
+        { "label": "I’m open but not rushing into it.", "value": "d" }
+      ],
+      "multiSelect": false
+    },
+    {
+      "id": "q22",
+      "question": "How important is intellectual compatibility to you?",
+      "options": [
+        { "label": "Crucial—I need stimulating debates.", "value": "a" },
+        { "label": "Nice, but emotional connection matters more.", "value": "b" },
+        { "label": "Some shared interests are enough.", "value": "c" },
+        { "label": "Not a priority, we’ll vibe anyway.", "value": "d" }
+      ],
+      "multiSelect": false
+    },
+    {
+      "id": "q23",
+      "question": "How do you feel about a partner earning significantly more?",
+      "options": [
+        { "label": "Great—teamwork makes the dream work!", "value": "a" },
+        { "label": "Fine, as long as respect is mutual.", "value": "b" },
+        { "label": "I’d rather we earn similarly.", "value": "c" },
+        { "label": "It could create tension for me.", "value": "d" }
+      ],
+      "multiSelect": false
+    },
+    {
+      "id": "q24",
+      "question": "How would you handle household responsibilities?",
+      "options": [
+        { "label": "Split based on strengths and fairness.", "value": "a" },
+        { "label": "I’ll take on more if needed.", "value": "b" },
+        { "label": "We’ll do it when we feel like it.", "value": "c" },
+        { "label": "Outsource it—hire help!", "value": "d" }
+      ],
+      "multiSelect": false
+    },
+    {
+      "id": "q25",
+      "question": "What’s your dream family size?",
+      "options": [
+        { "label": "2-3 kids, the sweet spot.", "value": "a" },
+        { "label": "One kid, focused and intentional.", "value": "b" },
+        { "label": "Big family—4 or more!", "value": "c" },
+        { "label": "No kids, or I’m still unsure.", "value": "d" }
+      ],
+      "multiSelect": false
+    },
+    {
+      "id": "q26",
+      "question": "What’s your parenting philosophy?",
+      "options": [
+        { "label": "Nurturing, with a focus on independence.", "value": "a" },
+        { "label": "Balanced—structure with flexibility.", "value": "b" },
+        { "label": "Firm—discipline builds character.", "value": "c" },
+        { "label": "I’ll adapt when the time comes.", "value": "d" }
+      ],
+      "multiSelect": false
+    },
+    {
+      "id": "q27",
+      "question": "What’s your vibe on socializing as a couple?",
+      "options": [
+        { "label": "We’re the life of every party!", "value": "a" },
+        { "label": "We enjoy gatherings but need downtime.", "value": "b" },
+        { "label": "Small groups or close friends only.", "value": "c" },
+        { "label": "We’re happiest just the two of us.", "value": "d" }
+      ],
+      "multiSelect": false
+    },
+    {
+      "id": "q28",
+      "question": "How do you handle stress in a relationship?",
+      "options": [
+        { "label": "We tackle it together as a team.", "value": "a" },
+        { "label": "I need space to process first.", "value": "b" },
+        { "label": "I lean on humor to diffuse it.", "value": "c" },
+        { "label": "I try to avoid stress altogether.", "value": "d" }
+      ],
+      "multiSelect": false
+    },
+    {
+      "id": "q29",
+      "question": "What’s your approach to gift-giving in a relationship?",
+      "options": [
+        { "label": "Thoughtful, personalized surprises.", "value": "a" },
+        { "label": "Practical gifts they’ll actually use.", "value": "b" },
+        { "label": "Big, extravagant gestures.", "value": "c" },
+        { "label": "I’m not big on gifts—time is enough.", "value": "d" }
+      ],
+      "multiSelect": false
+    },
+    {
+      "id": "q30",
+      "question": "Which quote resonates with your relationship vibe?",
+      "options": [
+        { "label": "“Together, we’re unstoppable.”", "value": "a" },
+        { "label": "“Love is our greatest adventure.”", "value": "b" },
+        { "label": "“We grow, we laugh, we thrive.”", "value": "c" },
+        { "label": "“Let’s keep it real and roll with it.”", "value": "d" }
+      ],
+      "multiSelect": false
+    },
+    {
+      "id": "q31",
+      "question": "What’s your stance on pets in a relationship?",
+      "options": [
+        { "label": "Pets are family—bring on the fur!", "value": "a" },
+        { "label": "I’m cool with pets if you handle them.", "value": "b" },
+        { "label": "One pet max, let’s keep it simple.", "value": "c" },
+        { "label": "No pets, I’m not about that life.", "value": "d" }
+      ],
+      "multiSelect": false
+    }
+  ]

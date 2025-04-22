@@ -1,0 +1,78 @@
+/* styles/NameInputPage.css */
+.name-input-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+    overflow: hidden;
+  }
+  
+  .name-card {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    max-width: 500px;
+    padding: 2rem;
+  }
+  
+  .glass-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(15px);
+    border-radius: 2rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    padding: 2rem;
+    width: 100%;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .question {
+    font-size: 1.5rem;
+    color: #fff;
+    margin-bottom: 1.5rem;
+  }
+  
+  .name-input {
+    width: 100%;
+    padding: 0.75rem;
+    margin-bottom: 1.5rem;
+    border: none;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    font-size: 1rem;
+    outline: none;
+    transition: background 0.3s ease;
+  }
+  
+  .name-input::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+  }
+  
+  .name-input:focus {
+    background: rgba(255, 255, 255, 0.25);
+  }
+  
+  .submit-button {
+    background: #fff;
+    color: #ff69b4;
+    padding: 0.75rem 2rem;
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    transition: transform 0.3s ease;
+  }
+  
+  .submit-button:hover {
+    transform: scale(1.05);
+  }
+  
+  .submit-button:disabled {
+    background: rgba(255, 255, 255, 0.5);
+    color: rgba(255, 255, 255, 0.7);
+    cursor: not-allowed;
+  }

@@ -1,0 +1,59 @@
+/* styles/ResultPage.css */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: "Rubik", sans-serif;
+  }
+  
+  .result-page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+    overflow: hidden;
+  }
+  
+  .result-card {
+    max-width: 500px;
+    width: 100%;
+    padding: 2rem;
+  }
+  
+  .glass-card {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(15px);
+    border-radius: 2rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    padding: 2rem;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .result-title {
+    font-size: 2rem;
+    color: #fff;
+    margin-bottom: 1.5rem;
+  }
+  
+  .score-circle {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #ff69b4 30%, #ff9a9e 90%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: bold;
+    color: white;
+    margin: 0 auto 1.5rem;
+    box-shadow: 0 0 15px rgba(255, 105, 180, 0.4);
+  }
+  
+  .result-message {
+    font-size: 1.2rem;
+    color: #fff;
+    margin-bottom: 2rem;
+    line-height: 1.5;
+  }
