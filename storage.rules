@@ -1,0 +1,19 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Users can upload and manage their own profile pictures
+    match /profile-pictures/{userId}/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Users can upload and manage their own quiz images
+    match /quiz-images/{userId}/{allPaths=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Users can upload and manage quiz images by quiz ID (for updates)
+    match /quiz-images/{quizId}/{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+} 

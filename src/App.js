@@ -1,131 +1,132 @@
 // App.jsx
-import { useState } from "react";
-import emailjs from "@emailjs/browser"; // Import EmailJS
-import LandingPage from "./components/LandingPage";
-import QuizPage from "./components/QuizPage";
-import ResultPage from "./components/ResultPage";
-import NameInputPage from "./components/NameInputPage";
-import questions from "./questions.json";
-import './App.css';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { onAuthStateChange } from './services/firebase';
+import LandingPage from './components/LandingPage';
+import NameInputPage from './components/NameInputPage';
+import DashboardPage from './components/DashboardPage';
+import QuizLandingPage from './components/QuizLandingPage';
+import QuizPage from './components/QuizPage';
+import ResultPage from './components/ResultPage';
+import SubscriptionPage from './components/SubscriptionPage';
+import './styles/global.css';
 
-export default function App() {
-  const [step, setStep] = useState("landing");
-  const [answers, setAnswers] = useState({});
-  const [score, setScore] = useState(null);
-  const [userName, setUserName] = useState("");
+// Create authentication context
+const AuthContext = createContext();
 
-  const myAnswers = {
-      q1: "d",
-      q2: "c",
-      q3: ["a", "b"],
-      q4: "c",
-      q5: "b",
-      q6: ["e", "b"],
-      q7: "c",
-      q8: "a",
-      q9: ["a", "c"],
-      q10: "b",
-      q11: ["a", "b"],
-      q12: "b",
-      q13: "b",
-      q14: "d",
-      q15: "b",
-      q16: "a",
-      q17: ["b", "c"],
-      q18: "a",
-      q19: "b",
-      q20: "b",
-      q21: ["a", "b"],
-      q22: "a",
-      q23: "d",
-      q24: ["b", "d"],
-      q25: "a",
-      q26: "c",
-      q27: "b",
-      q28: "c",
-      q29: "a",
-      q30: "d",
-      q31: "c"
-  };
-
-  const handleStart = () => setStep("name");
-
-  const handleNameSubmit = (name) => {
-    setUserName(name);
-    setStep("quiz");
-  };
-
-  const handleAnswerChange = (id, value) => {
-    setAnswers((prev) => ({ ...prev, [id]: value }));
-  };
-
-  const calculateScore = () => {
-    let matchPoints = 0;
-    let total = 0;
-    questions.forEach((q) => {
-      if (answers[q.id]) {
-        total++;
-        if (q.multiSelect) {
-          const userAnswers = Array.isArray(answers[q.id]) ? answers[q.id] : [answers[q.id]];
-          const correctAnswers = Array.isArray(myAnswers[q.id]) ? myAnswers[q.id] : [myAnswers[q.id]];
-          const matches = userAnswers.filter((ans) => correctAnswers.includes(ans)).length;
-          if (matches === 2) {
-            matchPoints += 1.5;
-          } else if (matches === 1) {
-            matchPoints += 1;
-          }
-        } else {
-          if (answers[q.id] === myAnswers[q.id]) {
-            matchPoints += 1;
-          }
-        }
-      }
-    });
-    const finalScore = Math.round((matchPoints / total) * 100);
-    setScore(finalScore);
-
-    // Send email notification via EmailJS
-    emailjs
-      .send(
-        "service_nok8l3k", // Replace with your EmailJS Service ID
-        "template_cq899ev", // Replace with your EmailJS Template ID
-        {
-          user_name: userName,
-          score: finalScore,
-          date: new Date().toLocaleString(),
-        },
-        "user_MgUIWcsi1jH4DWOrLSNHx" // Replace with your EmailJS User ID
-      )
-      .then(
-        (result) => {
-          console.log("Email sent successfully:", result.text);
-        },
-        (error) => {
-          console.error("Email failed to send:", error.text);
-        }
-      );
-
-    setStep("result");
-  };
-
-  if (step === "name") {
-    return <NameInputPage onSubmit={handleNameSubmit} />;
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
   }
+  return context;
+};
 
-  if (step === "quiz") {
+function App() {
+  const [user, setUser] = useState(null);
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Listen to Firebase auth state changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChange((firebaseUser) => {
+      if (firebaseUser) {
+        // User is signed in
+        const userInfo = {
+          uid: firebaseUser.uid,
+          name: firebaseUser.displayName || firebaseUser.email,
+          email: firebaseUser.email,
+          firstName: (firebaseUser.displayName || firebaseUser.email).split(' ')[0],
+          lastName: (firebaseUser.displayName || firebaseUser.email).split(' ').slice(1).join(' ')
+        };
+        setUser(userInfo);
+        
+        // Load additional user data from localStorage if available
+        const storedUserData = localStorage.getItem('userData');
+        if (storedUserData) {
+          try {
+            setUserData(JSON.parse(storedUserData));
+          } catch (error) {
+            console.error('Error parsing stored user data:', error);
+          }
+        }
+      } else {
+        // User is signed out
+        setUser(null);
+        setUserData(null);
+        localStorage.removeItem('userData');
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const login = (userInfo) => {
+    setUser(userInfo);
+    // Store additional user data in localStorage
+    localStorage.setItem('userData', JSON.stringify({
+      name: userInfo.name,
+      email: userInfo.email,
+      subscription: 'free',
+      activeLinks: 0,
+      totalQuizzes: 0,
+      totalResponses: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }));
+  };
+
+  const logout = () => {
+    setUser(null);
+    setUserData(null);
+    localStorage.removeItem('userData');
+  };
+
+  const updateUserData = (data) => {
+    setUserData(data);
+    localStorage.setItem('userData', JSON.stringify(data));
+  };
+
+  const authValue = {
+    user,
+    userData,
+    login,
+    logout,
+    updateUserData,
+    loading
+  };
+
+  if (loading) {
     return (
-      <QuizPage
-        questions={questions}
-        answers={answers}
-        onAnswerChange={handleAnswerChange}
-        onSubmit={calculateScore}
-      />
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '100vh' 
+      }}>
+        <div className="spinner" />
+      </div>
     );
   }
 
-  if (step === "result") {
-    return <ResultPage score={score} userName={userName} onRestart={() => setStep("landing")} />;
-  }
-
-  return <LandingPage onStart={handleStart} />;
+  return (
+    <AuthContext.Provider value={authValue}>
+      <Router>
+        <div className="App">
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/name-input" element={<NameInputPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/quiz/:quizId" element={<QuizLandingPage />} />
+            <Route path="/quiz/:quizId/take" element={<QuizPage />} />
+            <Route path="/result/:quizId" element={<ResultPage />} />
+            <Route path="/subscription" element={<SubscriptionPage />} />
+          </Routes>
+        </div>
+      </Router>
+    </AuthContext.Provider>
+  );
 }
+
+export default App;
