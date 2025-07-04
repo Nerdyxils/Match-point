@@ -2,6 +2,24 @@ import React, { useState } from 'react';
 import { X, Upload, Trash2, ChevronDown, ChevronUp, CheckCircle } from 'lucide-react';
 import { createQuiz, compressImage } from '../services/firebase';
 import { useAuth } from '../App';
+import '../styles/DashboardPage.css'; // for palette
+
+const palette = {
+  lavender: '#e9e6f7',
+  blue: '#e3f6fd',
+  mint: '#e6f6f2',
+  blush: '#fdf6f0',
+  sand: '#ffe082',
+  accent: '#4f8cff',
+  error: '#fef2f2',
+  errorBorder: '#fecaca',
+  errorText: '#dc2626',
+  border: '#e5e7eb',
+  border2: '#d1c4e9',
+  text: '#1a223f',
+  subtext: '#7b809a',
+  check: '#00cecb',
+};
 
 const CreateQuizModal = ({ onClose, onQuizCreated }) => {
   const { user } = useAuth();
@@ -13,14 +31,30 @@ const CreateQuizModal = ({ onClose, onQuizCreated }) => {
   const [expandedQuestion, setExpandedQuestion] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  // Import questions from the JSON file
+  const [createdQuizId, setCreatedQuizId] = useState(null);
+  const [copied, setCopied] = useState(false);
   const questions = require('../questions.json');
-  
-  // Debug: Log the questions being imported
-  console.log('=== QUESTIONS IMPORTED ===');
-  console.log('Total questions available:', questions.length);
-  console.log('First few questions:', questions.slice(0, 3).map(q => ({ id: q.id, question: q.question.substring(0, 30) + '...' })));
+
+  // Custom checkbox
+  const CustomCheckbox = ({ checked }) => (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 22,
+        height: 22,
+        borderRadius: 8,
+        border: `2px solid ${checked ? palette.check : palette.border}`,
+        background: checked ? palette.check : '#fff',
+        transition: 'all 0.2s',
+        marginRight: 10,
+        boxShadow: checked ? '0 2px 8px rgba(0,206,203,0.08)' : 'none',
+      }}
+    >
+      {checked && <CheckCircle size={16} color="#fff" fill={palette.check} />}
+    </span>
+  );
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -37,23 +71,16 @@ const CreateQuizModal = ({ onClose, onQuizCreated }) => {
     setImagePreview('');
   };
 
-  const toggleQuestion = (question) => {
-    console.log('=== TOGGLING QUESTION ===');
-    console.log('Question being toggled:', { id: question.id, question: question.question.substring(0, 30) + '...' });
-    
+  // When a question row is clicked, check and expand
+  const handleQuestionClick = (question) => {
     setSelectedQuestions(prev => {
       const isSelected = prev.find(q => q.id === question.id);
-      console.log('Currently selected questions:', prev.map(q => q.id));
-      console.log('Is this question already selected?', !!isSelected);
-      
       if (isSelected) {
-        const newSelection = prev.filter(q => q.id !== question.id);
-        console.log('Removing question. New selection:', newSelection.map(q => q.id));
-        return newSelection;
+        setExpandedQuestion(null);
+        return prev.filter(q => q.id !== question.id);
       } else {
-        const newSelection = [...prev, question];
-        console.log('Adding question. New selection:', newSelection.map(q => q.id));
-        return newSelection;
+        setExpandedQuestion(question.id);
+        return [...prev, question];
       }
     });
   };
@@ -63,97 +90,188 @@ const CreateQuizModal = ({ onClose, onQuizCreated }) => {
       ...prev,
       [questionId]: answerIndex
     }));
-  };
-
-  const toggleExpandedQuestion = (questionId) => {
-    setExpandedQuestion(expandedQuestion === questionId ? null : questionId);
+    setExpandedQuestion(null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     if (!quizName.trim()) {
       setError('Please enter a quiz name');
       return;
     }
-
     if (selectedQuestions.length === 0) {
       setError('Please select at least 1 question for your quiz');
       return;
     }
-
     if (selectedQuestions.length > 20) {
       setError('Please select no more than 20 questions (maximum allowed)');
       return;
     }
-
-    // Check if all selected questions have preferred answers
     const missingAnswers = selectedQuestions.filter(q => preferredAnswers[q.id] === undefined);
     if (missingAnswers.length > 0) {
       setError('Please set your preferred answer for all selected questions');
       return;
     }
-
     setLoading(true);
     setError('');
-
     try {
       let processedImage = quizImage;
-      if (quizImage) {
-        processedImage = await compressImage(quizImage);
-      }
-
-      // Add preferred answers to questions
+      if (quizImage) processedImage = await compressImage(quizImage);
       const questionsWithAnswers = selectedQuestions.map(q => ({
         ...q,
         preferredAnswer: preferredAnswers[q.id]
       }));
-
-      console.log('=== CREATING QUIZ FROM MODAL ===');
-      console.log('Creating quiz with questions:', questionsWithAnswers);
-      console.log('Number of questions:', questionsWithAnswers.length);
-      console.log('Selected question IDs:', selectedQuestions.map(q => q.id));
-      console.log('Selected question texts:', selectedQuestions.map(q => q.question.substring(0, 50) + '...'));
-      console.log('Preferred answers:', preferredAnswers);
-      console.log('Total questions available in JSON:', questions.length);
-      console.log('Questions being saved to Firebase:', questionsWithAnswers.length);
-      
-      // Additional debugging - show exactly what's being sent to Firebase
-      console.log('=== DETAILED QUIZ DATA ===');
-      questionsWithAnswers.forEach((q, index) => {
-        console.log(`Question ${index + 1}:`, {
-          id: q.id,
-          question: q.question,
-          options: q.options,
-          preferredAnswer: q.preferredAnswer
-        });
-      });
-
       const result = await createQuiz(user.uid, questionsWithAnswers, quizName, processedImage);
-      
       if (result.success) {
-        console.log('Quiz created successfully:', result);
-        onQuizCreated();
-      } else {
-        console.error('Failed to create quiz:', result.error);
-        setError(result.error || 'Failed to create quiz');
-      }
+        setCreatedQuizId(result.quizId || result.id || questionsWithAnswers[0]?.id || '');
+      } else setError(result.error || 'Failed to create quiz');
     } catch (error) {
-      console.error('Error creating quiz:', error);
       setError('An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
+  // Share handlers
+  const quizLink = createdQuizId ? `${window.location.origin}/quiz/${createdQuizId}` : '';
+  const handleCopy = async () => {
+    if (quizLink) {
+      await navigator.clipboard.writeText(quizLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+  const handleShare = (platform) => {
+    const encodedLink = encodeURIComponent(quizLink);
+    const text = encodeURIComponent('Take my MatchPoint quiz!');
+    let url = '';
+    switch (platform) {
+      case 'whatsapp':
+        url = `https://wa.me/?text=${text}%20${encodedLink}`;
+        break;
+      case 'imessage':
+        url = `sms:&body=${text}%20${encodedLink}`;
+        break;
+      case 'facebook':
+        url = `https://www.facebook.com/sharer/sharer.php?u=${encodedLink}`;
+        break;
+      case 'twitter':
+        url = `https://twitter.com/intent/tweet?text=${text}&url=${encodedLink}`;
+        break;
+      case 'instagram':
+        url = `https://www.instagram.com/?url=${encodedLink}`;
+        break;
+      default:
+        url = quizLink;
+    }
+    window.open(url, '_blank');
+  };
+
+  if (createdQuizId) {
+    // Show the share/copy modal
+    return (
+      <div 
+        style={{ 
+          position: 'fixed', 
+          top: 0, left: 0, right: 0, bottom: 0, 
+          background: 'rgba(0, 0, 0, 0.6)', 
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1rem'
+        }}
+        onClick={onClose}
+      >
+        <div
+          style={{
+            background: palette.lavender,
+            borderRadius: '1.25rem',
+            padding: '2rem 1.5rem',
+            maxWidth: '400px',
+            width: '100%',
+            boxShadow: '0 20px 40px -5px rgba(30,34,90,0.10)',
+            border: `1.5px solid ${palette.border2}`,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.5rem',
+            alignItems: 'center',
+          }}
+          onClick={e => e.stopPropagation()}
+        >
+          <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: palette.text, marginBottom: '0.5rem' }}>Quiz Created!</h2>
+          <div style={{ width: '100%', marginBottom: '1rem', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.95rem', color: palette.text, marginBottom: '0.5rem' }}>Share your quiz link:</div>
+            <input
+              type="text"
+              value={quizLink}
+              readOnly
+              style={{
+                width: '100%',
+                padding: '0.5rem 0.75rem',
+                border: `1.5px solid ${palette.border2}`,
+                borderRadius: '0.5rem',
+                fontSize: '0.95rem',
+                background: '#f6f7fb',
+                color: palette.text,
+                marginBottom: '0.5rem',
+                textAlign: 'center',
+                fontWeight: 500
+              }}
+            />
+            <button
+              onClick={handleCopy}
+              style={{
+                width: '100%',
+                padding: '0.75rem',
+                borderRadius: '0.75rem',
+                background: copied ? palette.check : palette.accent,
+                color: '#fff',
+                border: 'none',
+                fontWeight: 600,
+                fontSize: '1rem',
+                cursor: 'pointer',
+                marginBottom: '0.5rem',
+                transition: 'background 0.2s',
+              }}
+            >
+              {copied ? 'Copied!' : 'Copy Link'}
+            </button>
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center', width: '100%' }}>
+            <button onClick={() => handleShare('whatsapp')} style={shareBtnStyle}>WhatsApp</button>
+            <button onClick={() => handleShare('imessage')} style={shareBtnStyle}>iMessage</button>
+            <button onClick={() => handleShare('facebook')} style={shareBtnStyle}>Facebook</button>
+            <button onClick={() => handleShare('twitter')} style={shareBtnStyle}>Twitter</button>
+            <button onClick={() => handleShare('instagram')} style={shareBtnStyle}>Instagram</button>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              marginTop: '1rem',
+              padding: '0.75rem 2rem',
+              borderRadius: '9999px',
+              background: palette.lavender,
+              color: palette.text,
+              border: `2px solid ${palette.border2}`,
+              fontWeight: 600,
+              fontSize: '1rem',
+              cursor: 'pointer',
+              transition: 'background 0.2s, color 0.2s',
+            }}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div 
       style={{ 
         position: 'fixed', 
-        top: 0, 
-        left: 0, 
-        right: 0, 
-        bottom: 0, 
+        top: 0, left: 0, right: 0, bottom: 0, 
         background: 'rgba(0, 0, 0, 0.6)', 
         zIndex: 1000,
         display: 'flex',
@@ -165,19 +283,23 @@ const CreateQuizModal = ({ onClose, onQuizCreated }) => {
     >
       <div
         style={{
-          background: 'white',
-          borderRadius: '1rem',
-          padding: '2rem',
+          background: palette.lavender,
+          borderRadius: '1.25rem',
+          padding: '2.5rem 2rem',
           maxWidth: '800px',
           width: '100%',
           maxHeight: '90vh',
           overflowY: 'auto',
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+          boxShadow: '0 20px 40px -5px rgba(30,34,90,0.10)',
+          border: `1.5px solid ${palette.border2}`,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '2rem',
         }}
         onClick={(e) => e.stopPropagation()}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Create New Quiz</h2>
+          <h2 style={{ fontSize: '1.35rem', fontWeight: 700, color: palette.text }}>Create New Quiz</h2>
           <button 
             onClick={onClose}
             style={{
@@ -185,200 +307,178 @@ const CreateQuizModal = ({ onClose, onQuizCreated }) => {
               border: 'none',
               fontSize: '1.5rem',
               cursor: 'pointer',
-              color: '#9ca3af',
+              color: palette.subtext,
               padding: '0.5rem',
-              borderRadius: '0.375rem'
+              borderRadius: '0.375rem',
+              transition: 'background 0.2s',
             }}
+            aria-label="Close"
           >
-            <X size={20} />
+            <X size={22} />
           </button>
         </div>
 
-        {/* Debug Info */}
-        <div style={{ 
-          padding: '1rem', 
-          background: '#f3f4f6', 
-          borderRadius: '0.5rem', 
-          marginBottom: '1rem',
-          fontSize: '0.875rem'
-        }}>
-          <div><strong>Selected Questions:</strong> {selectedQuestions.length}/20</div>
-          <div><strong>Validation:</strong> {selectedQuestions.length >= 1 && selectedQuestions.length <= 20 ? '✅ Valid' : '❌ Invalid'}</div>
-          <div><strong>Missing Answers:</strong> {selectedQuestions.filter(q => preferredAnswers[q.id] === undefined).length}</div>
-          <div><strong>Available Questions:</strong> {questions.length} total in bank</div>
-        </div>
-
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {/* Quiz Name */}
-          <div>
-            <label style={{ display: 'block', fontWeight: 600, color: '#374151', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
-              Quiz Name (e.g., "Quiz for Ayo")
-            </label>
-            <input
-              type="text"
-              value={quizName}
-              onChange={(e) => setQuizName(e.target.value)}
-              placeholder="Quiz for..."
-              style={{
-                width: '100%',
-                padding: '0.75rem 1rem',
-                border: '2px solid #e5e7eb',
-                borderRadius: '0.5rem',
-                fontSize: '1rem'
-              }}
-              required
-            />
-          </div>
-
-          {/* Quiz Image */}
-          <div>
-            <label style={{ display: 'block', fontWeight: 600, color: '#374151', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
-              Quiz Image (Optional)
-            </label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {imagePreview ? (
-                <div style={{ position: 'relative' }}>
-                  <img
-                    src={imagePreview}
-                    alt="Preview"
-                    style={{
-                      width: '100%',
-                      height: '128px',
-                      objectFit: 'cover',
-                      borderRadius: '0.5rem'
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={removeImage}
-                    style={{
-                      position: 'absolute',
-                      top: '0.5rem',
-                      right: '0.5rem',
-                      background: '#ef4444',
-                      border: 'none',
-                      color: 'white',
-                      padding: '0.25rem',
-                      borderRadius: '50%',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              ) : (
-                <label style={{ 
-                  width: '100%', 
-                  height: '128px', 
-                  border: '2px dashed #e5e7eb', 
-                  borderRadius: '0.5rem', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  cursor: 'pointer'
-                }}>
-                  <div style={{ textAlign: 'center' }}>
-                    <Upload size={24} style={{ margin: '0 auto 0.5rem', color: '#9ca3af' }} />
-                    <span style={{ fontSize: '0.875rem', color: '#6b7280' }}>Click to upload image</span>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          {/* Quiz Name & Image */}
+          <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+            <div style={{ flex: 2, minWidth: 0 }}>
+              <label style={{ display: 'block', fontWeight: 600, color: palette.text, marginBottom: '0.5rem', fontSize: '0.95rem' }}>
+                Quiz Name
+              </label>
+              <input
+                type="text"
+                value={quizName}
+                onChange={(e) => setQuizName(e.target.value)}
+                placeholder="Quiz for..."
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  border: `2px solid ${palette.border2}`,
+                  borderRadius: '0.75rem',
+                  fontSize: '1.05rem',
+                  background: '#f6f7fb',
+                  color: palette.text,
+                  fontWeight: 500,
+                  outline: 'none',
+                  marginBottom: '0.5rem',
+                }}
+                required
+              />
+            </div>
+            <div style={{ flex: 1, minWidth: 180 }}>
+              <label style={{ display: 'block', fontWeight: 600, color: palette.text, marginBottom: '0.5rem', fontSize: '0.95rem' }}>
+                Quiz Image (Optional)
+              </label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {imagePreview ? (
+                  <div style={{ position: 'relative' }}>
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      style={{
+                        width: '100%',
+                        height: '128px',
+                        objectFit: 'cover',
+                        borderRadius: '0.75rem',
+                        border: `1.5px solid ${palette.border2}`,
+                        background: palette.sand
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={removeImage}
+                      style={{
+                        position: 'absolute',
+                        top: '0.5rem',
+                        right: '0.5rem',
+                        background: palette.errorText,
+                        border: 'none',
+                        color: 'white',
+                        padding: '0.25rem',
+                        borderRadius: '50%',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 8px rgba(220,38,38,0.10)'
+                      }}
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    style={{ display: 'none' }}
-                  />
-                </label>
-              )}
+                ) : (
+                  <label style={{ 
+                    width: '100%', 
+                    height: '128px', 
+                    border: `2px dashed ${palette.border2}`,
+                    borderRadius: '0.75rem', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center', 
+                    cursor: 'pointer',
+                    background: palette.sand
+                  }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <Upload size={24} style={{ margin: '0 auto 0.5rem', color: palette.subtext }} />
+                      <span style={{ fontSize: '0.875rem', color: palette.subtext }}>Click to upload image</span>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Questions Selection */}
-          <div>
+          <div style={{ background: palette.mint, borderRadius: '1rem', padding: '1.5rem', border: `1.5px solid ${palette.check}33` }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <label style={{ fontWeight: 600, color: '#374151', fontSize: '0.875rem' }}>
-                Select Questions ({selectedQuestions.length}/20 selected)
+              <label style={{ fontWeight: 700, color: palette.text, fontSize: '1.05rem' }}>
+                Select Questions ({selectedQuestions.length}/20)
               </label>
-              <span style={{ fontSize: '0.75rem', color: '#6b7280' }}>
+              <span style={{ fontSize: '0.85rem', color: palette.subtext }}>
                 Choose 1-20 questions
               </span>
             </div>
-            
-            <div style={{ 
-              padding: '0.75rem', 
-              background: '#f0f9ff', 
-              border: '1px solid #bae6fd', 
-              borderRadius: '0.5rem', 
-              marginBottom: '1rem',
-              fontSize: '0.75rem',
-              color: '#0369a1'
-            }}>
-              💡 <strong>Tip:</strong> Choose questions that best represent your preferences. With freemium limits, make each question count!
-            </div>
-
-            <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: '0.5rem' }}>
+            <div style={{ maxHeight: '300px', overflowY: 'auto', border: `1.5px solid ${palette.check}33`, borderRadius: '0.75rem', background: '#f6f7fb' }}>
               {questions.map((question) => {
                 const isSelected = selectedQuestions.find(q => q.id === question.id);
                 const isExpanded = expandedQuestion === question.id;
-                
                 return (
                   <div
                     key={question.id}
-                    style={{ borderBottom: '1px solid #e5e7eb' }}
+                    style={{ borderBottom: `1px solid ${palette.border2}22` }}
                   >
                     {/* Question Header */}
                     <div
                       style={{
                         padding: '1rem',
                         cursor: 'pointer',
-                        background: isSelected ? '#f0f9ff' : 'white',
-                        borderLeft: isSelected ? '4px solid #00cecb' : 'none',
+                        background: isSelected ? palette.lavender : 'transparent',
+                        borderLeft: isSelected ? `4px solid ${palette.check}` : 'none',
                         display: 'flex',
                         justifyContent: 'space-between',
-                        alignItems: 'center'
+                        alignItems: 'center',
+                        borderRadius: isSelected ? '0.5rem' : 0,
+                        transition: 'background 0.2s',
                       }}
-                      onClick={() => toggleQuestion(question)}
+                      onClick={() => handleQuestionClick(question)}
                     >
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={() => {}}
-                            style={{ margin: 0 }}
-                          />
-                          <span style={{ fontWeight: 500, color: '#374151' }}>
-                            {question.question}
-                          </span>
-                        </div>
-                        <div style={{ fontSize: '0.75rem', color: '#6b7280', marginLeft: '1.5rem', marginTop: '0.25rem' }}>
-                          {question.options.length} options
-                        </div>
+                      <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <CustomCheckbox checked={!!isSelected} />
+                        <span style={{ fontWeight: 600, color: palette.text, fontSize: '1.01rem' }}>
+                          {question.question}
+                        </span>
                       </div>
-                      
-                      {isSelected && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleExpandedQuestion(question.id);
-                          }}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            color: '#6b7280',
-                            padding: '0.25rem'
-                          }}
-                        >
-                          {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                        </button>
-                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ fontSize: '0.85rem', color: palette.subtext }}>
+                          {question.options.length} options
+                        </span>
+                        {isSelected && (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setExpandedQuestion(isExpanded ? null : question.id); }}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              color: palette.subtext,
+                              padding: '0.25rem',
+                              borderRadius: '0.375rem',
+                              transition: 'background 0.2s',
+                            }}
+                            aria-label="Expand options"
+                          >
+                            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                          </button>
+                        )}
+                      </div>
                     </div>
-
                     {/* Preferred Answer Selection */}
                     {isSelected && isExpanded && (
-                      <div style={{ padding: '1rem', background: '#f9fafb', borderTop: '1px solid #e5e7eb' }}>
-                        <p style={{ fontWeight: 600, color: '#374151', marginBottom: '0.75rem', fontSize: '0.875rem' }}>
+                      <div style={{ padding: '1rem', background: palette.blue, borderTop: `1px solid ${palette.border2}33`, borderRadius: '0 0 0.5rem 0.5rem' }}>
+                        <p style={{ fontWeight: 600, color: palette.text, marginBottom: '0.75rem', fontSize: '0.95rem' }}>
                           Set Your Preferred Answer:
                         </p>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -392,8 +492,10 @@ const CreateQuizModal = ({ onClose, onQuizCreated }) => {
                                 padding: '0.5rem',
                                 borderRadius: '0.375rem',
                                 cursor: 'pointer',
-                                background: preferredAnswers[question.id] === index ? '#e0f2fe' : 'white',
-                                border: preferredAnswers[question.id] === index ? '1px solid #00cecb' : '1px solid #e5e7eb'
+                                background: preferredAnswers[question.id] === index ? palette.sand : '#fff',
+                                border: preferredAnswers[question.id] === index ? `1.5px solid ${palette.check}` : `1.5px solid ${palette.border2}`,
+                                fontWeight: preferredAnswers[question.id] === index ? 700 : 500,
+                                color: palette.text,
                               }}
                             >
                               <input
@@ -404,9 +506,9 @@ const CreateQuizModal = ({ onClose, onQuizCreated }) => {
                                 onChange={() => setPreferredAnswer(question.id, index)}
                                 style={{ margin: 0 }}
                               />
-                              <span style={{ flex: 1, fontSize: '0.875rem' }}>{option}</span>
+                              <span style={{ flex: 1, fontSize: '0.95rem' }}>{option}</span>
                               {preferredAnswers[question.id] === index && (
-                                <CheckCircle size={16} style={{ color: '#00cecb' }} />
+                                <CheckCircle size={16} style={{ color: palette.check }} />
                               )}
                             </label>
                           ))}
@@ -423,11 +525,12 @@ const CreateQuizModal = ({ onClose, onQuizCreated }) => {
           {error && (
             <div style={{ 
               padding: '0.75rem', 
-              background: '#fef2f2', 
-              border: '1px solid #fecaca', 
+              background: palette.error, 
+              border: `1.5px solid ${palette.errorBorder}`, 
               borderRadius: '0.5rem', 
-              color: '#dc2626',
-              fontSize: '0.875rem'
+              color: palette.errorText,
+              fontSize: '0.95rem',
+              fontWeight: 600,
             }}>
               {error}
             </div>
@@ -443,10 +546,12 @@ const CreateQuizModal = ({ onClose, onQuizCreated }) => {
                 padding: '0.875rem 1.75rem',
                 borderRadius: '9999px',
                 fontWeight: 600,
-                border: '2px solid #e5e7eb',
-                background: 'white',
-                color: '#374151',
-                cursor: 'pointer'
+                border: `2px solid ${palette.border2}`,
+                background: palette.lavender,
+                color: palette.text,
+                cursor: 'pointer',
+                fontSize: '1.05rem',
+                transition: 'background 0.2s, color 0.2s',
               }}
             >
               Cancel
@@ -460,10 +565,12 @@ const CreateQuizModal = ({ onClose, onQuizCreated }) => {
                 borderRadius: '9999px',
                 fontWeight: 600,
                 border: 'none',
-                background: loading || selectedQuestions.length < 1 ? '#9ca3af' : '#00cecb',
+                background: loading || selectedQuestions.length < 1 ? palette.subtext : palette.check,
                 color: 'white',
                 cursor: loading || selectedQuestions.length < 1 ? 'not-allowed' : 'pointer',
-                opacity: loading || selectedQuestions.length < 1 ? 0.5 : 1
+                opacity: loading || selectedQuestions.length < 1 ? 0.5 : 1,
+                fontSize: '1.05rem',
+                transition: 'background 0.2s, color 0.2s',
               }}
             >
               {loading ? 'Creating...' : `Create Quiz (${selectedQuestions.length} question${selectedQuestions.length !== 1 ? 's' : ''})`}
@@ -473,6 +580,20 @@ const CreateQuizModal = ({ onClose, onQuizCreated }) => {
       </div>
     </div>
   );
+};
+
+// Share button style
+const shareBtnStyle = {
+  padding: '0.5rem 0.75rem',
+  borderRadius: '0.5rem',
+  background: palette.accent,
+  color: '#fff',
+  border: 'none',
+  fontWeight: 600,
+  fontSize: '0.95rem',
+  cursor: 'pointer',
+  margin: '0.15rem',
+  transition: 'background 0.2s',
 };
 
 export default CreateQuizModal;

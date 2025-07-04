@@ -74,12 +74,12 @@ export default function NameInputPage() {
   return (
     <div className="name-input-page">
       <div className="name-input-container">
-        <motion.div
+      <motion.div
           className="name-input-card"
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, y: 50 }}
+        animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-        >
+      >
           <div className="header-section">
             <motion.div
               className="brand-logo"
@@ -118,11 +118,11 @@ export default function NameInputPage() {
             >
               <Input
                 label="First Name"
-                type="text"
+              type="text"
                 name="firstName"
                 value={formData.firstName}
                 onChange={handleInputChange}
-                placeholder="Enter your first name"
+              placeholder="Enter your first name"
                 required
                 icon={User}
                 error={errors.firstName}
@@ -161,7 +161,7 @@ export default function NameInputPage() {
               >
                 <span>Continue to Quiz</span>
                 <ArrowRight size={20} />
-              </Button>
+            </Button>
             </motion.div>
           </form>
 
@@ -176,7 +176,7 @@ export default function NameInputPage() {
             </p>
           </motion.div>
         </motion.div>
-      </div>
+        </div>
     </div>
   );
 }

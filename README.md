@@ -1,4 +1,4 @@
-# date-matchr
+# Match-Point
 # 💘 Compatibility Check App
 
 A playful, personality-packed quiz app that helps people see how compatible they are with *you* — the creator. It's part fun, part personal branding, and all vibes. Built to be aesthetic, interactive, and shareable.

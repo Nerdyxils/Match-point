@@ -15,9 +15,26 @@ import {
 import Button from './ui/button';
 import CreateQuizModal from './CreateQuizModal';
 import QuizResultsModal from './QuizResultsModal';
-import { getUserData, getUserQuizzes, deleteQuiz } from '../services/firebase';
+import { getUserData, getUserQuizzes, deleteQuiz, getQuiz } from '../services/firebase';
 import { useAuth } from '../App';
 import '../styles/DashboardPage.css';
+
+const palette = {
+  lavender: '#e9e6f7',
+  blue: '#e3f6fd',
+  mint: '#e6f6f2',
+  blush: '#fdf6f0',
+  sand: '#ffe082',
+  accent: '#4f8cff',
+  error: '#fef2f2',
+  errorBorder: '#fecaca',
+  errorText: '#dc2626',
+  border: '#e5e7eb',
+  border2: '#d1c4e9',
+  text: '#1a223f',
+  subtext: '#7b809a',
+  check: '#00cecb',
+};
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -28,6 +45,8 @@ export default function DashboardPage() {
   const [selectedQuiz, setSelectedQuiz] = useState(null);
   const [showResultsModal, setShowResultsModal] = useState(false);
   const [copiedQuizId, setCopiedQuizId] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [quizToDelete, setQuizToDelete] = useState(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -97,22 +116,32 @@ export default function DashboardPage() {
   };
 
   const handleDeleteQuiz = async (quizId) => {
-    if (window.confirm('Are you sure you want to delete this quiz? This action cannot be undone.')) {
-      try {
-        const result = await deleteQuiz(quizId);
-        if (result.success) {
-          setQuizzes(quizzes.filter(q => q.id !== quizId));
-        } else {
-          alert('Failed to delete quiz');
-        }
-      } catch (error) {
-        alert('An error occurred while deleting the quiz');
+    try {
+      const result = await deleteQuiz(quizId);
+      if (result.success) {
+        setQuizzes(quizzes.filter(q => q.id !== quizId));
+      } else {
+        alert('Failed to delete quiz');
       }
+    } catch (error) {
+      alert('An error occurred while deleting the quiz');
     }
+    setShowDeleteModal(false);
+    setQuizToDelete(null);
   };
 
-  const handleViewResults = (quiz) => {
-    setSelectedQuiz(quiz);
+  const handleViewResults = async (quiz) => {
+    // Fetch the latest quiz data from Firestore
+    try {
+      const result = await getQuiz(quiz.id);
+      if (result.success) {
+        setSelectedQuiz(result.data);
+      } else {
+        setSelectedQuiz(quiz); // fallback to existing quiz data
+      }
+    } catch (e) {
+      setSelectedQuiz(quiz); // fallback to existing quiz data
+    }
     setShowResultsModal(true);
   };
 
@@ -476,95 +505,101 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="quizzes-grid">
-                {quizzes.map((quiz, index) => {
-                  const responseCount = quiz.responses?.length || 0;
-                  const matchCount = quiz.responses?.filter(r => r.score >= 70).length || 0;
-                  
-                  return (
-                    <motion.div
-                      key={quiz.id}
-                      className="quiz-card"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.6, delay: 0.1 * index }}
-                    >
-                      {/* Quiz Image */}
-                      {quiz.imageURL && (
-                        <div className="quiz-image">
-                          <img src={quiz.imageURL} alt={quiz.name} />
-                        </div>
-                      )}
-
-                      {/* Quiz Info */}
-                      <div className="quiz-info">
-                        <h4 className="quiz-name">{quiz.name}</h4>
-                        <p className="quiz-questions">{quiz.questions.length} questions</p>
-                        
-                        {/* Quiz Stats */}
-                        <div className="quiz-stats">
-                          <div className="stat">
-                            <Users size={16} />
-                            <span>{responseCount} responses</span>
+                {quizzes
+                  .slice() // copy array to avoid mutating state
+                  .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                  .map((quiz, index) => {
+                    const responseCount = quiz.responses?.length || 0;
+                    const matchCount = quiz.responses?.filter(r => r.score >= 70).length || 0;
+                    
+                    return (
+                      <motion.div
+                        key={quiz.id}
+                        className="quiz-card"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: 0.1 * index }}
+                      >
+                        {/* Quiz Image */}
+                        {quiz.imageURL && (
+                          <div className="quiz-image">
+                            <img src={quiz.imageURL} alt={quiz.name} />
                           </div>
-                          <div className="stat">
-                            <CheckCircle size={16} />
-                            <span>{matchCount} matches</span>
-                          </div>
-                        </div>
-
-                        {/* Created Date */}
-                        <p className="quiz-date">
-                          Created {new Date(quiz.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-
-                      {/* Quiz Actions */}
-                      <div className="quiz-actions">
-                        <Button
-                          variant="secondary"
-                          onClick={() => copyQuizLink(quiz.id)}
-                          size="sm"
-                          style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: '0.25rem' 
-                          }}
-                        >
-                          {copiedQuizId === quiz.id ? (
-                            <>
-                              <CheckCircle size={16} />
-                              Copied!
-                            </>
-                          ) : (
-                            <>
-                              <Copy size={16} />
-                              Copy Link
-                            </>
-                          )}
-                        </Button>
-
-                        {responseCount > 0 && (
-                          <Button
-                            variant="primary"
-                            onClick={() => handleViewResults(quiz)}
-                            size="sm"
-                          >
-                            View Results
-                          </Button>
                         )}
 
-                        <Button
-                          variant="secondary"
-                          onClick={() => handleDeleteQuiz(quiz.id)}
-                          size="sm"
-                          style={{ color: '#ef4444' }}
-                        >
-                          <Trash2 size={16} />
-                        </Button>
-                      </div>
-                    </motion.div>
-                  );
-                })}
+                        {/* Quiz Info */}
+                        <div className="quiz-info">
+                          <h4 className="quiz-name">{quiz.name}</h4>
+                          <p className="quiz-questions">{quiz.questions.length} questions</p>
+                          
+                          {/* Quiz Stats */}
+                          <div className="quiz-stats">
+                            <div className="stat">
+                              <Users size={16} />
+                              <span>{responseCount} responses</span>
+                            </div>
+                            <div className="stat">
+                              <CheckCircle size={16} />
+                              <span>{matchCount} matches</span>
+                            </div>
+                          </div>
+
+                          {/* Created Date */}
+                          <p className="quiz-date">
+                            Created {new Date(quiz.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+
+                        {/* Quiz Actions */}
+                        <div className="quiz-actions">
+                          <Button
+                            variant="secondary"
+                            onClick={() => copyQuizLink(quiz.id)}
+                            size="sm"
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '0.25rem' 
+                            }}
+                          >
+                            {copiedQuizId === quiz.id ? (
+                              <>
+                                <CheckCircle size={16} />
+                                Copied!
+                              </>
+                            ) : (
+                              <>
+                                <Copy size={16} />
+                                Copy Link
+                              </>
+                            )}
+                          </Button>
+
+                          {responseCount > 0 && (
+                            <Button
+                              variant="primary"
+                              onClick={() => handleViewResults(quiz)}
+                              size="sm"
+                            >
+                              View Results
+                            </Button>
+                          )}
+
+                          <Button
+                            variant="secondary"
+                            onClick={() => {
+                              setQuizToDelete(quiz);
+                              setShowDeleteModal(true);
+                            }}
+                            size="sm"
+                            style={{ color: '#ef4444' }}
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
               </div>
             )}
           </motion.div>
@@ -589,6 +624,60 @@ export default function DashboardPage() {
             setSelectedQuiz(null);
           }}
         />
+      )}
+
+      {showDeleteModal && quizToDelete && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.5)',
+            zIndex: 2000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          onClick={() => setShowDeleteModal(false)}
+        >
+          <div
+            style={{
+              background: palette.blush,
+              borderRadius: '1.25rem',
+              padding: '2rem 2.5rem',
+              minWidth: 320,
+              maxWidth: '90vw',
+              boxShadow: '0 8px 32px rgba(245,87,108,0.13)',
+              border: `2px solid ${palette.errorBorder}`,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1.5rem',
+              alignItems: 'center',
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <Trash2 size={32} color={palette.errorText} />
+            <h3 style={{ color: palette.text, fontWeight: 700, fontSize: '1.15rem', margin: 0 }}>Delete Quiz?</h3>
+            <p style={{ color: palette.subtext, fontSize: '1rem', textAlign: 'center', margin: 0 }}>
+              Are you sure you want to delete <b>{quizToDelete.name}</b>? This action cannot be undone.
+            </p>
+            <div style={{ display: 'flex', gap: '1rem', width: '100%', justifyContent: 'center' }}>
+              <Button
+                variant="secondary"
+                onClick={() => setShowDeleteModal(false)}
+                style={{ borderRadius: 9999, padding: '0.75rem 2rem', fontWeight: 600 }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => handleDeleteQuiz(quizToDelete.id)}
+                style={{ borderRadius: 9999, padding: '0.75rem 2rem', fontWeight: 600, background: palette.errorText, color: '#fff', border: 'none' }}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
