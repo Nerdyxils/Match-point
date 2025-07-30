@@ -84,6 +84,8 @@ function App() {
     setUser(null);
     setUserData(null);
     localStorage.removeItem('userData');
+    // Navigate to landing page after logout
+    window.location.href = '/';
   };
 
   const updateUserData = (data) => {

@@ -44,7 +44,7 @@ export default function DashboardPage() {
     const fetchUserData = async () => {
       try {
         if (!user) {
-          navigate('/name-input');
+          navigate('/');
           return;
         }
 
