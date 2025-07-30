@@ -1,7 +1,7 @@
 // App.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { onAuthStateChange } from './services/firebase';
+import { onAuthStateChanged, getAuth } from 'firebase/auth';
 import LandingPage from './components/LandingPage';
 import NameInputPage from './components/NameInputPage';
 import DashboardPage from './components/DashboardPage';
@@ -22,6 +22,8 @@ export const useAuth = () => {
   return context;
 };
 
+
+
 function App() {
   const [user, setUser] = useState(null);
   const [userData, setUserData] = useState(null);
@@ -29,7 +31,8 @@ function App() {
 
   // Listen to Firebase auth state changes
   useEffect(() => {
-    const unsubscribe = onAuthStateChange((firebaseUser) => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
         // User is signed in
         const userInfo = {

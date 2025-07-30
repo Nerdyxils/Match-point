@@ -11,8 +11,8 @@ const QuizResultsModal = ({ quiz, onClose }) => {
     : 0;
 
   const getMatchStatus = (score) => {
-    if (score >= 70) return { text: 'Match!', color: '#00cecb', icon: CheckCircle };
-    return { text: 'No Match', color: '#9ca3af', icon: XCircle };
+    if (score >= 70) return { text: 'Match!', color: '#FF6B6B', icon: CheckCircle };
+    return { text: 'No Match', color: '#8A8A8A', icon: XCircle };
   };
 
   return (
@@ -37,20 +37,21 @@ const QuizResultsModal = ({ quiz, onClose }) => {
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
         style={{
-          background: 'white',
+          background: '#1A1A1A',
           borderRadius: '1rem',
           padding: '2rem',
           maxWidth: '600px',
           width: '100%',
           maxHeight: '90vh',
           overflowY: 'auto',
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.4)',
+          border: '1px solid rgba(255, 255, 255, 0.08)'
         }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Quiz Results</h2>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#FFFFFF' }}>Quiz Results</h2>
           <button 
             onClick={onClose}
             style={{
@@ -58,7 +59,7 @@ const QuizResultsModal = ({ quiz, onClose }) => {
               border: 'none',
               fontSize: '1.5rem',
               cursor: 'pointer',
-              color: '#9ca3af',
+              color: '#8A8A8A',
               padding: '0.5rem',
               borderRadius: '0.375rem'
             }}
@@ -69,10 +70,10 @@ const QuizResultsModal = ({ quiz, onClose }) => {
 
         {/* Quiz Info */}
         <div style={{ marginBottom: '2rem' }}>
-          <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+          <h3 style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '0.5rem', color: '#FFFFFF' }}>
             {quiz.name}
           </h3>
-          <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>
+          <p style={{ color: '#B0B0B0', fontSize: '0.875rem' }}>
             Created {new Date(quiz.createdAt).toLocaleDateString()}
           </p>
         </div>
@@ -86,16 +87,16 @@ const QuizResultsModal = ({ quiz, onClose }) => {
         }}>
           <div style={{
             padding: '1rem',
-            background: 'rgba(255, 255, 255, 0.8)',
+            background: 'rgba(255, 255, 255, 0.05)',
             borderRadius: '0.5rem',
-            border: '1px solid #e5e7eb',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
             textAlign: 'center'
           }}>
-            <Users size={24} style={{ color: '#ff5e5b', marginBottom: '0.5rem' }} />
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#374151' }}>
+            <Users size={24} style={{ color: '#FF6B6B', marginBottom: '0.5rem' }} />
+            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#FFFFFF' }}>
               {responseCount}
             </div>
-            <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+            <div style={{ fontSize: '0.875rem', color: '#B0B0B0' }}>
               Total Responses
             </div>
           </div>

@@ -373,7 +373,7 @@ export const updateUserSubscription = async (userId, subscription) => {
 };
 
 // Auth state listener
-export const onAuthStateChange = (callback) => {
+export const listenToAuthState = (callback) => {
   return onAuthStateChanged(auth, callback);
 };
 

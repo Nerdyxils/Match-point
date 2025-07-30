@@ -5,7 +5,7 @@
   align-items: center;
   justify-content: center;
   padding: 2rem 0;
-  background: var(--gradient-bottom-right);
+  background: var(--background);
   background-attachment: fixed;
   position: relative;
   overflow: hidden;
@@ -17,7 +17,7 @@
   content: '';
   position: absolute;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--surface-lighter);
   backdrop-filter: blur(10px);
   animation: float 8s ease-in-out infinite;
 }
@@ -55,12 +55,12 @@
 }
 
 .name-input-card {
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--surface);
   backdrop-filter: blur(30px);
   border-radius: var(--radius-2xl);
   padding: 3rem;
   box-shadow: var(--shadow-xl);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid var(--border);
   position: relative;
   overflow: hidden;
 }
@@ -72,7 +72,7 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: var(--gradient-bottom-right);
+  background: var(--primary);
 }
 
 /* Header Section */
@@ -91,8 +91,8 @@
 .brand-icon {
   width: 48px;
   height: 48px;
-  color: var(--bittersweet);
-  filter: drop-shadow(0 4px 8px rgba(255, 94, 91, 0.3));
+  color: var(--primary);
+  filter: drop-shadow(0 4px 8px rgba(255, 107, 107, 0.3));
 }
 
 .brand-title {

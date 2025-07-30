@@ -1,30 +1,5 @@
 # MatchPoint Setup Guide
 
-## Environment Variables
-
-Create a `.env` file in the root directory with the following variables:
-
-```env
-# Firebase Configuration
-REACT_APP_FIREBASE_API_KEY=your_firebase_api_key_here
-REACT_APP_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-REACT_APP_FIREBASE_PROJECT_ID=your_project_id
-REACT_APP_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-REACT_APP_FIREBASE_MESSAGING_SENDER_ID=123456789
-REACT_APP_FIREBASE_APP_ID=your_app_id
-
-# EmailJS Configuration
-REACT_APP_EMAILJS_SERVICE_ID=your_emailjs_service_id
-REACT_APP_EMAILJS_TEMPLATE_ID=your_emailjs_template_id
-REACT_APP_EMAILJS_USER_ID=your_emailjs_user_id
-
-# Stripe Configuration
-REACT_APP_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_key_here
-
-# Google Analytics (Optional)
-REACT_APP_GA_TRACKING_ID=G-XXXXXXXXXX
-```
-
 ## Firebase Setup
 
 1. **Create Firebase Project**

@@ -1,5 +1,5 @@
 // components/LandingPage.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, Eye, EyeOff, Sparkles, Heart, ArrowRight, Star, Zap, X } from 'lucide-react';
@@ -20,6 +20,27 @@ export default function LandingPage() {
   });
   const [error, setError] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
+
+  // Handle mobile background image
+  useEffect(() => {
+    const handleResize = () => {
+      const heroSection = document.querySelector('.hero-section');
+      if (heroSection) {
+        if (window.innerWidth <= 900) {
+          heroSection.style.backgroundImage = "linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url('./images/couple.jpg')";
+          heroSection.style.backgroundSize = 'cover';
+          heroSection.style.backgroundPosition = 'center';
+          heroSection.style.backgroundRepeat = 'no-repeat';
+        } else {
+          heroSection.style.backgroundImage = 'none';
+        }
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -417,13 +438,7 @@ export default function LandingPage() {
         )}
       </AnimatePresence>
 
-      <div
-        className="mobile-hero-bg"
-        style={{
-          background: "url('/images/couple.jpg') center center/cover no-repeat",
-        }}
-      ></div>
-      <div className="mobile-hero-overlay" />
+
     </div>
   );
 }

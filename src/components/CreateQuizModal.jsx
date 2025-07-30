@@ -5,20 +5,22 @@ import { useAuth } from '../App';
 import '../styles/DashboardPage.css'; // for palette
 
 const palette = {
-  lavender: '#e9e6f7',
-  blue: '#e3f6fd',
-  mint: '#e6f6f2',
-  blush: '#fdf6f0',
-  sand: '#ffe082',
-  accent: '#4f8cff',
-  error: '#fef2f2',
-  errorBorder: '#fecaca',
-  errorText: '#dc2626',
-  border: '#e5e7eb',
-  border2: '#d1c4e9',
-  text: '#1a223f',
-  subtext: '#7b809a',
-  check: '#00cecb',
+  lavender: 'linear-gradient(135deg, rgba(30, 30, 50, 0.9), rgba(20, 20, 40, 0.95))',
+  blue: 'linear-gradient(135deg, rgba(25, 35, 45, 0.8), rgba(15, 25, 35, 0.9))',
+  mint: 'linear-gradient(135deg, rgba(25, 45, 35, 0.8), rgba(15, 35, 25, 0.9))',
+  blush: 'linear-gradient(135deg, rgba(35, 25, 45, 0.8), rgba(25, 15, 35, 0.9))',
+  sand: 'linear-gradient(135deg, rgba(45, 35, 25, 0.8), rgba(35, 25, 15, 0.9))',
+  accent: '#FF6B6B',
+  error: 'rgba(255, 107, 107, 0.15)',
+  errorBorder: 'rgba(255, 107, 107, 0.3)',
+  errorText: '#FF6B6B',
+  border: 'rgba(255, 255, 255, 0.1)',
+  border2: 'rgba(255, 255, 255, 0.15)',
+  text: '#FFFFFF',
+  subtext: 'rgba(255, 255, 255, 0.7)',
+  check: '#FF6B6B',
+  inputBg: 'rgba(0, 0, 0, 0.3)',
+  inputBorder: 'rgba(255, 255, 255, 0.1)',
 };
 
 const CreateQuizModal = ({ onClose, onQuizCreated }) => {
@@ -46,10 +48,10 @@ const CreateQuizModal = ({ onClose, onQuizCreated }) => {
         height: 22,
         borderRadius: 8,
         border: `2px solid ${checked ? palette.check : palette.border}`,
-        background: checked ? palette.check : '#fff',
+        background: checked ? palette.check : 'rgba(255, 255, 255, 0.05)',
         transition: 'all 0.2s',
         marginRight: 10,
-        boxShadow: checked ? '0 2px 8px rgba(0,206,203,0.08)' : 'none',
+        boxShadow: checked ? '0 2px 8px rgba(255, 107, 107, 0.3)' : 'none',
       }}
     >
       {checked && <CheckCircle size={16} color="#fff" fill={palette.check} />}
@@ -174,7 +176,8 @@ const CreateQuizModal = ({ onClose, onQuizCreated }) => {
         style={{ 
           position: 'fixed', 
           top: 0, left: 0, right: 0, bottom: 0, 
-          background: 'rgba(0, 0, 0, 0.6)', 
+          background: 'rgba(0, 0, 0, 0.8)', 
+          backdropFilter: 'blur(8px)',
           zIndex: 1000,
           display: 'flex',
           alignItems: 'center',
@@ -186,16 +189,19 @@ const CreateQuizModal = ({ onClose, onQuizCreated }) => {
         <div
           style={{
             background: palette.lavender,
+            backdropFilter: 'blur(20px)',
             borderRadius: '1.25rem',
             padding: '2rem 1.5rem',
             maxWidth: '400px',
             width: '100%',
-            boxShadow: '0 20px 40px -5px rgba(30,34,90,0.10)',
-            border: `1.5px solid ${palette.border2}`,
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.6)',
+            border: `1px solid ${palette.border}`,
             display: 'flex',
             flexDirection: 'column',
             gap: '1.5rem',
             alignItems: 'center',
+            position: 'relative',
+            overflow: 'hidden',
           }}
           onClick={e => e.stopPropagation()}
         >
@@ -209,14 +215,15 @@ const CreateQuizModal = ({ onClose, onQuizCreated }) => {
               style={{
                 width: '100%',
                 padding: '0.5rem 0.75rem',
-                border: `1.5px solid ${palette.border2}`,
+                border: `1px solid ${palette.inputBorder}`,
                 borderRadius: '0.5rem',
                 fontSize: '0.95rem',
-                background: '#f6f7fb',
+                background: palette.inputBg,
                 color: palette.text,
                 marginBottom: '0.5rem',
                 textAlign: 'center',
-                fontWeight: 500
+                fontWeight: 500,
+                backdropFilter: 'blur(10px)'
               }}
             />
             <button
@@ -268,36 +275,55 @@ const CreateQuizModal = ({ onClose, onQuizCreated }) => {
   }
 
   return (
-    <div 
-      style={{ 
-        position: 'fixed', 
-        top: 0, left: 0, right: 0, bottom: 0, 
-        background: 'rgba(0, 0, 0, 0.6)', 
-        zIndex: 1000,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '1rem'
-      }}
-      onClick={onClose}
-    >
-      <div
-        style={{
-          background: palette.lavender,
-          borderRadius: '1.25rem',
-          padding: '2.5rem 2rem',
-          maxWidth: '800px',
-          width: '100%',
-          maxHeight: '90vh',
-          overflowY: 'auto',
-          boxShadow: '0 20px 40px -5px rgba(30,34,90,0.10)',
-          border: `1.5px solid ${palette.border2}`,
+          <div 
+        style={{ 
+          position: 'fixed', 
+          top: 0, left: 0, right: 0, bottom: 0, 
+          background: 'rgba(0, 0, 0, 0.8)', 
+          backdropFilter: 'blur(8px)',
+          zIndex: 1000,
           display: 'flex',
-          flexDirection: 'column',
-          gap: '2rem',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1rem'
         }}
-        onClick={(e) => e.stopPropagation()}
-      >
+        onClick={onClose}
+    >
+                      <div
+          style={{
+            background: palette.lavender,
+            backdropFilter: 'blur(20px)',
+            borderRadius: '1.25rem',
+            padding: '2.5rem 2rem',
+            maxWidth: '800px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.6)',
+            border: `1px solid ${palette.border}`,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '2rem',
+            position: 'relative',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Gradient overlay for hover effect */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.1))',
+              opacity: 0,
+              transition: 'opacity 0.4s ease',
+              pointerEvents: 'none',
+              borderRadius: '1.25rem',
+              zIndex: 1,
+            }}
+          />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <h2 style={{ fontSize: '1.35rem', fontWeight: 700, color: palette.text }}>Create New Quiz</h2>
           <button 
@@ -318,7 +344,7 @@ const CreateQuizModal = ({ onClose, onQuizCreated }) => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '2rem', position: 'relative', zIndex: 2, minHeight: 0 }}>
           {/* Quiz Name & Image */}
           <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
             <div style={{ flex: 2, minWidth: 0 }}>
@@ -333,14 +359,15 @@ const CreateQuizModal = ({ onClose, onQuizCreated }) => {
                 style={{
                   width: '100%',
                   padding: '0.75rem 1rem',
-                  border: `2px solid ${palette.border2}`,
+                  border: `1px solid ${palette.inputBorder}`,
                   borderRadius: '0.75rem',
                   fontSize: '1.05rem',
-                  background: '#f6f7fb',
+                  background: palette.inputBg,
                   color: palette.text,
                   fontWeight: 500,
                   outline: 'none',
                   marginBottom: '0.5rem',
+                  backdropFilter: 'blur(10px)',
                 }}
                 required
               />
@@ -360,8 +387,8 @@ const CreateQuizModal = ({ onClose, onQuizCreated }) => {
                         height: '128px',
                         objectFit: 'cover',
                         borderRadius: '0.75rem',
-                        border: `1.5px solid ${palette.border2}`,
-                        background: palette.sand
+                        border: `1px solid ${palette.border}`,
+                        background: palette.inputBg
                       }}
                     />
                     <button
@@ -387,13 +414,15 @@ const CreateQuizModal = ({ onClose, onQuizCreated }) => {
                   <label style={{ 
                     width: '100%', 
                     height: '128px', 
-                    border: `2px dashed ${palette.border2}`,
+                    border: `2px dashed ${palette.border}`,
                     borderRadius: '0.75rem', 
                     display: 'flex', 
                     alignItems: 'center', 
                     justifyContent: 'center', 
                     cursor: 'pointer',
-                    background: palette.sand
+                    background: palette.inputBg,
+                    backdropFilter: 'blur(10px)',
+                    transition: 'all 0.2s ease',
                   }}>
                     <div style={{ textAlign: 'center' }}>
                       <Upload size={24} style={{ margin: '0 auto 0.5rem', color: palette.subtext }} />
@@ -412,7 +441,7 @@ const CreateQuizModal = ({ onClose, onQuizCreated }) => {
           </div>
 
           {/* Questions Selection */}
-          <div style={{ background: palette.mint, borderRadius: '1rem', padding: '1.5rem', border: `1.5px solid ${palette.check}33` }}>
+          <div style={{ background: palette.mint, borderRadius: '1rem', padding: '1.5rem', border: `1px solid ${palette.border}`, backdropFilter: 'blur(10px)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <label style={{ fontWeight: 700, color: palette.text, fontSize: '1.05rem' }}>
                 Select Questions ({selectedQuestions.length}/20)
@@ -421,14 +450,14 @@ const CreateQuizModal = ({ onClose, onQuizCreated }) => {
                 Choose 1-20 questions
               </span>
             </div>
-            <div style={{ maxHeight: '300px', overflowY: 'auto', border: `1.5px solid ${palette.check}33`, borderRadius: '0.75rem', background: '#f6f7fb' }}>
+            <div style={{ maxHeight: '300px', overflowY: 'auto', border: `1px solid ${palette.border}`, borderRadius: '0.75rem', background: palette.inputBg, backdropFilter: 'blur(10px)' }}>
               {questions.map((question) => {
                 const isSelected = selectedQuestions.find(q => q.id === question.id);
                 const isExpanded = expandedQuestion === question.id;
                 return (
                   <div
                     key={question.id}
-                    style={{ borderBottom: `1px solid ${palette.border2}22` }}
+                    style={{ borderBottom: `1px solid ${palette.border}` }}
                   >
                     {/* Question Header */}
                     <div
@@ -477,7 +506,7 @@ const CreateQuizModal = ({ onClose, onQuizCreated }) => {
                     </div>
                     {/* Preferred Answer Selection */}
                     {isSelected && isExpanded && (
-                      <div style={{ padding: '1rem', background: palette.blue, borderTop: `1px solid ${palette.border2}33`, borderRadius: '0 0 0.5rem 0.5rem' }}>
+                      <div style={{ padding: '1rem', background: palette.blue, borderTop: `1px solid ${palette.border}`, borderRadius: '0 0 0.5rem 0.5rem', backdropFilter: 'blur(10px)' }}>
                         <p style={{ fontWeight: 600, color: palette.text, marginBottom: '0.75rem', fontSize: '0.95rem' }}>
                           Set Your Preferred Answer:
                         </p>
@@ -492,10 +521,12 @@ const CreateQuizModal = ({ onClose, onQuizCreated }) => {
                                 padding: '0.5rem',
                                 borderRadius: '0.375rem',
                                 cursor: 'pointer',
-                                background: preferredAnswers[question.id] === index ? palette.sand : '#fff',
-                                border: preferredAnswers[question.id] === index ? `1.5px solid ${palette.check}` : `1.5px solid ${palette.border2}`,
+                                background: preferredAnswers[question.id] === index ? palette.sand : palette.inputBg,
+                                border: preferredAnswers[question.id] === index ? `1px solid ${palette.check}` : `1px solid ${palette.inputBorder}`,
                                 fontWeight: preferredAnswers[question.id] === index ? 700 : 500,
                                 color: palette.text,
+                                backdropFilter: 'blur(10px)',
+                                transition: 'all 0.2s ease',
                               }}
                             >
                               <input
@@ -537,7 +568,7 @@ const CreateQuizModal = ({ onClose, onQuizCreated }) => {
           )}
 
           {/* Submit Button */}
-          <div style={{ display: 'flex', gap: '0.75rem', paddingTop: '1rem' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', paddingTop: '1rem', position: 'relative', zIndex: 10, marginTop: 'auto' }}>
             <button
               type="button"
               onClick={onClose}
@@ -546,12 +577,13 @@ const CreateQuizModal = ({ onClose, onQuizCreated }) => {
                 padding: '0.875rem 1.75rem',
                 borderRadius: '9999px',
                 fontWeight: 600,
-                border: `2px solid ${palette.border2}`,
-                background: palette.lavender,
+                border: `1px solid ${palette.border}`,
+                background: palette.inputBg,
                 color: palette.text,
                 cursor: 'pointer',
                 fontSize: '1.05rem',
-                transition: 'background 0.2s, color 0.2s',
+                transition: 'all 0.2s ease',
+                backdropFilter: 'blur(10px)',
               }}
             >
               Cancel
@@ -570,7 +602,8 @@ const CreateQuizModal = ({ onClose, onQuizCreated }) => {
                 cursor: loading || selectedQuestions.length < 1 ? 'not-allowed' : 'pointer',
                 opacity: loading || selectedQuestions.length < 1 ? 0.5 : 1,
                 fontSize: '1.05rem',
-                transition: 'background 0.2s, color 0.2s',
+                transition: 'all 0.2s ease',
+                boxShadow: loading || selectedQuestions.length < 1 ? 'none' : '0 4px 16px rgba(255, 107, 107, 0.3)',
               }}
             >
               {loading ? 'Creating...' : `Create Quiz (${selectedQuestions.length} question${selectedQuestions.length !== 1 ? 's' : ''})`}

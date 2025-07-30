@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   Heart, 
@@ -10,7 +10,14 @@ import {
   Users,
   BarChart3,
   Crown,
-  TrendingUp
+  TrendingUp,
+  Loader,
+  Menu,
+  X,
+  Home,
+  FileText,
+
+  LogOut
 } from 'lucide-react';
 import Button from './ui/button';
 import CreateQuizModal from './CreateQuizModal';
@@ -18,23 +25,6 @@ import QuizResultsModal from './QuizResultsModal';
 import { getUserData, getUserQuizzes, deleteQuiz, getQuiz } from '../services/firebase';
 import { useAuth } from '../App';
 import '../styles/DashboardPage.css';
-
-const palette = {
-  lavender: '#e9e6f7',
-  blue: '#e3f6fd',
-  mint: '#e6f6f2',
-  blush: '#fdf6f0',
-  sand: '#ffe082',
-  accent: '#4f8cff',
-  error: '#fef2f2',
-  errorBorder: '#fecaca',
-  errorText: '#dc2626',
-  border: '#e5e7eb',
-  border2: '#d1c4e9',
-  text: '#1a223f',
-  subtext: '#7b809a',
-  check: '#00cecb',
-};
 
 export default function DashboardPage() {
   const navigate = useNavigate();
@@ -47,22 +37,19 @@ export default function DashboardPage() {
   const [copiedQuizId, setCopiedQuizId] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [quizToDelete, setQuizToDelete] = useState(null);
+  const [activeView, setActiveView] = useState('overview'); // overview, create, quizzes
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         if (!user) {
-          console.log('No user found, redirecting to name input');
           navigate('/name-input');
           return;
         }
 
-        console.log('Current user:', user);
-        console.log('Auth user data:', authUserData);
-
-        // Fetch user data from Firebase (or use mock data for demo)
+        // Fetch user data from Firebase
         const userResult = await getUserData(user.uid);
-        console.log('Firebase user result:', userResult);
         
         if (userResult.success) {
           updateUserData(userResult.data);
@@ -78,13 +65,11 @@ export default function DashboardPage() {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           };
-          console.log('Creating default user data:', defaultUserData);
           updateUserData(defaultUserData);
         }
 
         // Fetch user's quizzes
         const quizzesResult = await getUserQuizzes(user.uid);
-        console.log('Quizzes result:', quizzesResult);
         
         if (quizzesResult.success) {
           setQuizzes(quizzesResult.data);
@@ -105,14 +90,14 @@ export default function DashboardPage() {
 
   const handleQuizCreated = () => {
     setShowCreateModal(false);
-    // Refresh quizzes
-    if (user) {
-      getUserQuizzes(user.uid).then(result => {
-        if (result.success) {
-          setQuizzes(result.data);
-        }
-      });
-    }
+    // Refresh quizzes list
+    const fetchQuizzes = async () => {
+      const result = await getUserQuizzes(user.uid);
+      if (result.success) {
+        setQuizzes(result.data);
+      }
+    };
+    fetchQuizzes();
   };
 
   const handleDeleteQuiz = async (quizId) => {
@@ -120,29 +105,25 @@ export default function DashboardPage() {
       const result = await deleteQuiz(quizId);
       if (result.success) {
         setQuizzes(quizzes.filter(q => q.id !== quizId));
-      } else {
-        alert('Failed to delete quiz');
+        setShowDeleteModal(false);
+        setQuizToDelete(null);
       }
     } catch (error) {
-      alert('An error occurred while deleting the quiz');
+      console.error('Failed to delete quiz:', error);
     }
-    setShowDeleteModal(false);
-    setQuizToDelete(null);
   };
 
   const handleViewResults = async (quiz) => {
-    // Fetch the latest quiz data from Firestore
     try {
+      // Fetch the latest quiz data
       const result = await getQuiz(quiz.id);
       if (result.success) {
         setSelectedQuiz(result.data);
-      } else {
-        setSelectedQuiz(quiz); // fallback to existing quiz data
+        setShowResultsModal(true);
       }
-    } catch (e) {
-      setSelectedQuiz(quiz); // fallback to existing quiz data
+    } catch (error) {
+      console.error('Failed to fetch quiz data:', error);
     }
-    setShowResultsModal(true);
   };
 
   const copyQuizLink = async (quizId) => {
@@ -163,23 +144,18 @@ export default function DashboardPage() {
 
   const canCreateQuiz = (!authUserData?.subscription || authUserData?.subscription === 'free') && quizzes.length >= 5;
 
+  const menuItems = [
+    { id: 'overview', label: 'Overview', icon: Home, description: 'Dashboard stats and welcome' },
+    { id: 'create', label: 'Create Quiz', icon: Plus, description: 'Build a new compatibility quiz' },
+    { id: 'quizzes', label: 'My Quizzes', icon: FileText, description: 'View and manage your quizzes' },
+  ];
+
   if (loading) {
     return (
       <div className="dashboard-page">
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          minHeight: '100vh',
-          flexDirection: 'column',
-          gap: '1rem'
-        }}>
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            className="spinner"
-          />
-          <p>Loading dashboard...</p>
+        <div className="loading-container">
+          <Loader className="loading-spinner" />
+          <p>Loading your dashboard...</p>
         </div>
       </div>
     );
@@ -187,424 +163,418 @@ export default function DashboardPage() {
 
   return (
     <div className="dashboard-page">
-      {/* Header */}
-      <header className="dashboard-header">
-        <div className="container">
-          <div className="header-content">
-            <motion.div
-              className="brand-section"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <Heart className="brand-icon" />
-              <h1 className="brand-title">MatchPoint</h1>
-            </motion.div>
+      {/* Sidebar */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div
+            className="sidebar-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+      </AnimatePresence>
 
-            <div className="user-section">
-              {authUserData?.isSubscribed && (
-                <div className="premium-badge">
-                  <Crown size={16} />
-                  <span>Premium</span>
-                </div>
-              )}
-              <Button
-                variant="secondary"
-                onClick={handleLogout}
-                className="logout-btn"
-              >
-                Logout
-              </Button>
+      <motion.aside
+        className={`sidebar ${sidebarOpen ? 'sidebar-open' : ''}`}
+        initial={{ x: '-100%' }}
+        animate={{ x: sidebarOpen ? 0 : '-100%' }}
+        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+      >
+        <div className="sidebar-header">
+          <div className="brand-section">
+            <div className="brand-icon">
+              <Heart />
             </div>
+            <h2 className="brand-title">MatchPoint</h2>
           </div>
+          <button
+            className="sidebar-close"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <X size={24} />
+          </button>
         </div>
-      </header>
+
+        <nav className="sidebar-nav">
+          {menuItems.map((item) => (
+            <button
+              key={item.id}
+              className={`nav-item ${activeView === item.id ? 'active' : ''}`}
+              onClick={() => {
+                setActiveView(item.id);
+                setSidebarOpen(false);
+              }}
+            >
+              <item.icon size={20} />
+              <div className="nav-item-content">
+                <span className="nav-label">{item.label}</span>
+                <span className="nav-description">{item.description}</span>
+              </div>
+            </button>
+          ))}
+        </nav>
+
+        <div className="sidebar-footer">
+          {authUserData?.isSubscribed && (
+            <div className="premium-badge">
+              <Crown size={16} />
+              <span>Premium Member</span>
+            </div>
+          )}
+          <button className="logout-btn" onClick={handleLogout}>
+            <LogOut size={20} />
+            <span>Logout</span>
+          </button>
+        </div>
+      </motion.aside>
 
       {/* Main Content */}
-      <main className="dashboard-main">
-        <div className="container">
-          {/* Welcome Section */}
-          <motion.div
-            className="welcome-section"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <h2 className="welcome-title">
-              Welcome back, {authUserData?.name || 'User'}! 👋
-            </h2>
-            <p className="welcome-subtitle">
-              Create quizzes to find your perfect match
-            </p>
-          </motion.div>
-
-          {/* Stats Overview */}
-          <motion.div
-            className="stats-overview"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            <div className="stats-grid">
-              <div className="stat-card">
-                <div className="stat-icon">
-                  <BarChart3 size={24} />
-                </div>
-                <div className="stat-content">
-                  <h3 className="stat-value">{quizzes.length}</h3>
-                  <p className="stat-label">Total Quizzes</p>
-                </div>
-              </div>
-
-              <div className="stat-card">
-                <div className="stat-icon">
-                  <Users size={24} />
-                </div>
-                <div className="stat-content">
-                  <h3 className="stat-value">
-                    {quizzes.reduce((total, quiz) => total + (quiz.responses?.length || 0), 0)}
-                  </h3>
-                  <p className="stat-label">Total Responses</p>
-                </div>
-              </div>
-
-              <div className="stat-card">
-                <div className="stat-icon">
-                  <CheckCircle size={24} />
-                </div>
-                <div className="stat-content">
-                  <h3 className="stat-value">
-                    {quizzes.reduce((total, quiz) => {
-                      const matches = quiz.responses?.filter(r => r.score >= 70).length || 0;
-                      return total + matches;
-                    }, 0)}
-                  </h3>
-                  <p className="stat-label">Matches Found</p>
-                </div>
-              </div>
-
-              <div className="stat-card">
-                <div className="stat-icon">
-                  <TrendingUp size={24} />
-                </div>
-                <div className="stat-content">
-                  <h3 className="stat-value">
-                    {(() => {
-                      const totalResponses = quizzes.reduce((total, quiz) => total + (quiz.responses?.length || 0), 0);
-                      const totalMatches = quizzes.reduce((total, quiz) => {
-                        const matches = quiz.responses?.filter(r => r.score >= 70).length || 0;
-                        return total + matches;
-                      }, 0);
-                      return totalResponses > 0 ? Math.round((totalMatches / totalResponses) * 100) : 0;
-                    })()}%
-                  </h3>
-                  <p className="stat-label">Match Rate</p>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Detailed Analytics */}
-          {quizzes.length > 0 && (
-            <motion.div
-              className="analytics-section"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
+      <div className="dashboard-content">
+        {/* Header */}
+        <header className="dashboard-header">
+          <div className="header-content">
+            <button
+              className="menu-toggle"
+              onClick={() => setSidebarOpen(true)}
             >
-              <h3 className="section-title">Analytics Overview</h3>
-              <div className="analytics-grid">
-                {/* Performance Metrics */}
-                <div className="analytics-card">
-                  <h4 className="analytics-title">Performance Metrics</h4>
-                  <div className="metrics-list">
-                    <div className="metric-item">
-                      <span className="metric-label">Average Score:</span>
-                      <span className="metric-value">
-                        {(() => {
-                          const allScores = quizzes.flatMap(quiz => 
-                            quiz.responses?.map(r => r.score) || []
-                          );
-                          return allScores.length > 0 
-                            ? Math.round(allScores.reduce((sum, score) => sum + score, 0) / allScores.length)
-                            : 0;
-                        })()}%
-                      </span>
-                    </div>
-                    <div className="metric-item">
-                      <span className="metric-label">Best Performing Quiz:</span>
-                      <span className="metric-value">
-                        {(() => {
-                          const bestQuiz = quizzes.reduce((best, quiz) => {
-                            const avgScore = quiz.responses?.length > 0 
-                              ? quiz.responses.reduce((sum, r) => sum + r.score, 0) / quiz.responses.length
-                              : 0;
-                            return avgScore > best.score ? { name: quiz.name, score: avgScore } : best;
-                          }, { name: 'None', score: 0 });
-                          return bestQuiz.name;
-                        })()}
-                      </span>
-                    </div>
-                    <div className="metric-item">
-                      <span className="metric-label">Response Rate:</span>
-                      <span className="metric-value">
-                        {(() => {
-                          const totalQuizzes = quizzes.length;
-                          const quizzesWithResponses = quizzes.filter(q => (q.responses?.length || 0) > 0).length;
-                          return Math.round((quizzesWithResponses / totalQuizzes) * 100);
-                        })()}%
-                      </span>
-                    </div>
-                  </div>
-                </div>
+              <Menu size={24} />
+            </button>
 
-                {/* Recent Activity */}
-                <div className="analytics-card">
-                  <h4 className="analytics-title">Recent Activity</h4>
-                  <div className="activity-list">
-                    {(() => {
-                      const allResponses = quizzes.flatMap(quiz => 
-                        quiz.responses?.map(r => ({ ...r, quizName: quiz.name })) || []
-                      );
-                      const recentResponses = allResponses
-                        .sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt))
-                        .slice(0, 3);
-                      
-                      return recentResponses.length > 0 ? (
-                        recentResponses.map((response, index) => (
-                          <div key={index} className="activity-item">
-                            <div className="activity-content">
-                              <span className="activity-name">{response.respondentName}</span>
-                              <span className="activity-quiz">took {response.quizName}</span>
-                            </div>
-                            <div className="activity-score">
-                              {response.score}% {response.score >= 70 ? '✅' : '❌'}
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="no-activity">No recent activity</p>
-                      );
-                    })()}
-                  </div>
-                </div>
+            <div className="header-title">
+              <h1>{menuItems.find(item => item.id === activeView)?.label}</h1>
+            </div>
 
-                {/* Score Distribution */}
-                <div className="analytics-card">
-                  <h4 className="analytics-title">Score Distribution</h4>
-                  <div className="score-distribution">
-                    {(() => {
-                      const allScores = quizzes.flatMap(quiz => 
-                        quiz.responses?.map(r => r.score) || []
-                      );
-                      const excellent = allScores.filter(s => s >= 80).length;
-                      const good = allScores.filter(s => s >= 60 && s < 80).length;
-                      const poor = allScores.filter(s => s < 60).length;
-                      const total = allScores.length;
-                      
-                      return total > 0 ? (
-                        <>
-                          <div className="score-bar">
-                            <span className="score-label">Excellent (80%+)</span>
-                            <div className="score-bar-container">
-                              <div 
-                                className="score-bar-fill excellent" 
-                                style={{ width: `${(excellent / total) * 100}%` }}
-                              />
-                            </div>
-                            <span className="score-count">{excellent}</span>
-                          </div>
-                          <div className="score-bar">
-                            <span className="score-label">Good (60-79%)</span>
-                            <div className="score-bar-container">
-                              <div 
-                                className="score-bar-fill good" 
-                                style={{ width: `${(good / total) * 100}%` }}
-                              />
-                            </div>
-                            <span className="score-count">{good}</span>
-                          </div>
-                          <div className="score-bar">
-                            <span className="score-label">Poor (&lt;60%)</span>
-                            <div className="score-bar-container">
-                              <div 
-                                className="score-bar-fill poor" 
-                                style={{ width: `${(poor / total) * 100}%` }}
-                              />
-                            </div>
-                            <span className="score-count">{poor}</span>
-                          </div>
-                        </>
-                      ) : (
-                        <p className="no-data">No score data available</p>
-                      );
-                    })()}
-                  </div>
+            <div className="user-info">
+              <span className="user-name">{authUserData?.name || 'User'}</span>
+              {authUserData?.isSubscribed && (
+                <div className="premium-indicator">
+                  <Crown size={16} />
                 </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Create Quiz Section */}
-          <motion.div
-            className="create-section"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-          >
-            <div className="create-card">
-              <div className="create-content">
-                <h3 className="create-title">Create New Quiz</h3>
-                <p className="create-subtitle">
-                  {authUserData?.isSubscribed 
-                    ? 'Unlimited quizzes with Premium!' 
-                    : `${quizzes.length}/5 quizzes used`
-                  }
-                </p>
-              </div>
-              
-              {canCreateQuiz ? (
-                <div className="upgrade-prompt">
-                  <Crown size={20} />
-                  <span>Upgrade to Premium for unlimited quizzes</span>
-                  <Button
-                    variant="primary"
-                    onClick={() => navigate('/subscription')}
-                    size="sm"
-                  >
-                    Upgrade
-                  </Button>
-                </div>
-              ) : (
-                <Button
-                  variant="primary"
-                  onClick={handleCreateQuiz}
-                  className="create-btn"
-                >
-                  <Plus size={20} />
-                  Create Quiz
-                </Button>
               )}
             </div>
-          </motion.div>
+          </div>
+        </header>
 
-          {/* Quizzes List */}
-          <motion.div
-            className="quizzes-section"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-          >
-            <h3 className="section-title">Your Quizzes</h3>
-            
-            {quizzes.length === 0 ? (
-              <div className="empty-state">
-                <Heart size={48} style={{ color: '#ff5e5b', marginBottom: '1rem' }} />
-                <h4>No quizzes yet</h4>
-                <p>Create your first quiz to start finding matches!</p>
-              </div>
-            ) : (
-              <div className="quizzes-grid">
-                {quizzes
-                  .slice() // copy array to avoid mutating state
-                  .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-                  .map((quiz, index) => {
-                    const responseCount = quiz.responses?.length || 0;
-                    const matchCount = quiz.responses?.filter(r => r.score >= 70).length || 0;
-                    
-                    return (
-                      <motion.div
-                        key={quiz.id}
-                        className="quiz-card"
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.1 * index }}
+        {/* Main Content Area */}
+        <main className="dashboard-main">
+          <AnimatePresence mode="wait">
+            {activeView === 'overview' && (
+              <motion.div
+                key="overview"
+                className="overview-view"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                {/* Welcome Section */}
+                <div className="welcome-section">
+                  <div className="welcome-content">
+                    <h2 className="welcome-title">
+                      Welcome back, {authUserData?.name || 'User'}! 👋
+                    </h2>
+                    <p className="welcome-subtitle">
+                      Your dating compatibility journey starts here
+                    </p>
+                  </div>
+                </div>
+
+                {/* Stats Overview */}
+                <div className="stats-overview">
+                  <div className="stats-grid">
+                    <div className="stat-card">
+                      <div className="stat-icon quizzes">
+                        <BarChart3 size={24} />
+                      </div>
+                      <div className="stat-content">
+                        <h3 className="stat-value">{quizzes.length}</h3>
+                        <p className="stat-label">Total Quizzes</p>
+                      </div>
+                    </div>
+
+                    <div className="stat-card">
+                      <div className="stat-icon responses">
+                        <Users size={24} />
+                      </div>
+                      <div className="stat-content">
+                        <h3 className="stat-value">
+                          {quizzes.reduce((total, quiz) => {
+                            const responses = Array.isArray(quiz.responses) ? quiz.responses : [];
+                            return total + responses.length;
+                          }, 0)}
+                        </h3>
+                        <p className="stat-label">Total Responses</p>
+                      </div>
+                    </div>
+
+                    <div className="stat-card">
+                      <div className="stat-icon compatibility">
+                        <CheckCircle size={24} />
+                      </div>
+                      <div className="stat-content">
+                        <h3 className="stat-value">
+                          {quizzes.reduce((total, quiz) => {
+                            const responses = Array.isArray(quiz.responses) ? quiz.responses : [];
+                            const matches = responses.filter(r => r && r.score >= 70).length;
+                            return total + matches;
+                          }, 0)}
+                        </h3>
+                        <p className="stat-label">Matches Found</p>
+                      </div>
+                    </div>
+
+                    <div className="stat-card">
+                      <div className="stat-icon compatibility">
+                        <TrendingUp size={24} />
+                      </div>
+                      <div className="stat-content">
+                        <h3 className="stat-value">
+                          {(() => {
+                            const totalResponses = quizzes.reduce((total, quiz) => {
+                              const responses = Array.isArray(quiz.responses) ? quiz.responses : [];
+                              return total + responses.length;
+                            }, 0);
+                            const totalMatches = quizzes.reduce((total, quiz) => {
+                              const responses = Array.isArray(quiz.responses) ? quiz.responses : [];
+                              const matches = responses.filter(r => r && r.score >= 70).length;
+                              return total + matches;
+                            }, 0);
+                            return totalResponses > 0 ? Math.round((totalMatches / totalResponses) * 100) : 0;
+                          })()}%
+                        </h3>
+                        <p className="stat-label">Match Rate</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="quick-actions">
+                  <div className="action-card">
+                    <h3>Quick Actions</h3>
+                    <div className="action-buttons">
+                      <Button
+                        variant="primary"
+                        onClick={() => setActiveView('create')}
+                        className="action-btn"
                       >
-                        {/* Quiz Image */}
-                        {quiz.imageURL && (
-                          <div className="quiz-image">
-                            <img src={quiz.imageURL} alt={quiz.name} />
-                          </div>
-                        )}
-
-                        {/* Quiz Info */}
-                        <div className="quiz-info">
-                          <h4 className="quiz-name">{quiz.name}</h4>
-                          <p className="quiz-questions">{quiz.questions.length} questions</p>
-                          
-                          {/* Quiz Stats */}
-                          <div className="quiz-stats">
-                            <div className="stat">
-                              <Users size={16} />
-                              <span>{responseCount} responses</span>
-                            </div>
-                            <div className="stat">
-                              <CheckCircle size={16} />
-                              <span>{matchCount} matches</span>
-                            </div>
-                          </div>
-
-                          {/* Created Date */}
-                          <p className="quiz-date">
-                            Created {new Date(quiz.createdAt).toLocaleDateString()}
-                          </p>
-                        </div>
-
-                        {/* Quiz Actions */}
-                        <div className="quiz-actions">
-                          <Button
-                            variant="secondary"
-                            onClick={() => copyQuizLink(quiz.id)}
-                            size="sm"
-                            style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              gap: '0.25rem' 
-                            }}
-                          >
-                            {copiedQuizId === quiz.id ? (
-                              <>
-                                <CheckCircle size={16} />
-                                Copied!
-                              </>
-                            ) : (
-                              <>
-                                <Copy size={16} />
-                                Copy Link
-                              </>
-                            )}
-                          </Button>
-
-                          {responseCount > 0 && (
-                            <Button
-                              variant="primary"
-                              onClick={() => handleViewResults(quiz)}
-                              size="sm"
-                            >
-                              View Results
-                            </Button>
-                          )}
-
-                          <Button
-                            variant="secondary"
-                            onClick={() => {
-                              setQuizToDelete(quiz);
-                              setShowDeleteModal(true);
-                            }}
-                            size="sm"
-                            style={{ color: '#ef4444' }}
-                          >
-                            <Trash2 size={16} />
-                          </Button>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-              </div>
+                        <Plus size={20} />
+                        Create New Quiz
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        onClick={() => setActiveView('quizzes')}
+                        className="action-btn"
+                      >
+                        <FileText size={20} />
+                        View My Quizzes
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
             )}
-          </motion.div>
-        </div>
-      </main>
+
+            {activeView === 'create' && (
+              <motion.div
+                key="create"
+                className="create-view"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="create-section">
+                  <div className="create-card">
+                    <div className="create-content">
+                      <h3 className="create-title">Create New Quiz</h3>
+                      <p className="create-subtitle">
+                        {authUserData?.isSubscribed 
+                          ? 'Unlimited quizzes with Premium!' 
+                          : `${quizzes.length}/5 quizzes used`
+                        }
+                      </p>
+                    </div>
+                    
+                    {canCreateQuiz ? (
+                      <div className="upgrade-prompt">
+                        <Crown size={20} />
+                        <span>Upgrade to Premium for unlimited quizzes</span>
+                        <Button
+                          variant="primary"
+                          onClick={() => navigate('/subscription')}
+                          size="sm"
+                        >
+                          Upgrade
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        variant="primary"
+                        onClick={handleCreateQuiz}
+                        className="create-btn"
+                      >
+                        <Plus size={20} />
+                        Create Quiz
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeView === 'quizzes' && (
+              <motion.div
+                key="quizzes"
+                className="quizzes-view"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="quizzes-section">
+                  <div className="section-header">
+                    <h3 className="section-title">Your Quizzes</h3>
+                    <Button
+                      variant="primary"
+                      onClick={() => setActiveView('create')}
+                      size="sm"
+                    >
+                      <Plus size={16} />
+                      New Quiz
+                    </Button>
+                  </div>
+                  
+                  {quizzes.length === 0 ? (
+                    <div className="empty-state">
+                      <Heart size={48} className="empty-icon" />
+                      <h4>No quizzes yet</h4>
+                      <p>Create your first quiz to start finding matches!</p>
+                      <Button
+                        variant="primary"
+                        onClick={() => setActiveView('create')}
+                        className="create-first-btn"
+                      >
+                        <Plus size={20} />
+                        Create Your First Quiz
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="quizzes-grid">
+                      {quizzes
+                        .slice()
+                        .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+                        .map((quiz, index) => {
+                          // Safely handle quiz data with fallbacks
+                          const quizName = quiz.name || 'Untitled Quiz';
+                          const questionsCount = Array.isArray(quiz.questions) ? quiz.questions.length : 0;
+                          const responses = Array.isArray(quiz.responses) ? quiz.responses : [];
+                          const responseCount = responses.length;
+                          const matchCount = responses.filter(r => r && r.score >= 70).length;
+                          const createdAt = quiz.createdAt ? new Date(quiz.createdAt).toLocaleDateString() : 'Unknown date';
+                          
+                          return (
+                            <motion.div
+                              key={quiz.id}
+                              className="quiz-card"
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.6, delay: 0.1 * index }}
+                            >
+                              {/* Quiz Header */}
+                              <div className="quiz-header">
+                                {/* Quiz Image */}
+                                {quiz.imageURL ? (
+                                  <div className="quiz-image">
+                                    <img src={quiz.imageURL} alt={quizName} onError={(e) => {
+                                      e.target.style.display = 'none';
+                                      e.target.nextSibling.style.display = 'flex';
+                                    }} />
+                                    <div className="quiz-image-fallback" style={{ display: 'none' }}>
+                                      <Heart size={24} />
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="quiz-image">
+                                    <Heart size={24} />
+                                  </div>
+                                )}
+
+                                {/* Quiz Basic Info */}
+                                <div className="quiz-basic-info">
+                                  <h4 className="quiz-name">{quizName}</h4>
+                                  <p className="quiz-questions">{questionsCount} questions</p>
+                                  <p className="quiz-date">Created {createdAt}</p>
+                                </div>
+                              </div>
+
+                              {/* Quiz Stats */}
+                              <div className="quiz-stats">
+                                <div className="stat">
+                                  <Users size={16} />
+                                  <span>{responseCount} responses</span>
+                                </div>
+                                <div className="stat">
+                                  <CheckCircle size={16} />
+                                  <span>{matchCount} matches</span>
+                                </div>
+                              </div>
+
+                              {/* Quiz Actions */}
+                              <div className="quiz-actions">
+                                <Button
+                                  variant="secondary"
+                                  onClick={() => copyQuizLink(quiz.id)}
+                                  size="sm"
+                                >
+                                  {copiedQuizId === quiz.id ? (
+                                    <>
+                                      <CheckCircle size={16} />
+                                      Copied!
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Copy size={16} />
+                                      Copy Link
+                                    </>
+                                  )}
+                                </Button>
+
+                                {responseCount > 0 && (
+                                  <Button
+                                    variant="primary"
+                                    onClick={() => handleViewResults(quiz)}
+                                    size="sm"
+                                  >
+                                    View Results
+                                  </Button>
+                                )}
+
+                                <Button
+                                  variant="secondary"
+                                  onClick={() => {
+                                    setQuizToDelete(quiz);
+                                    setShowDeleteModal(true);
+                                  }}
+                                  size="sm"
+                                  className="delete-btn"
+                                >
+                                  <Trash2 size={16} />
+                                </Button>
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </main>
+      </div>
 
       {/* Modals */}
       {showCreateModal && (
@@ -626,55 +596,31 @@ export default function DashboardPage() {
         />
       )}
 
+      {/* Delete Confirmation Modal */}
       {showDeleteModal && quizToDelete && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0, left: 0, right: 0, bottom: 0,
-            background: 'rgba(0,0,0,0.5)',
-            zIndex: 2000,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          onClick={() => setShowDeleteModal(false)}
-        >
-          <div
-            style={{
-              background: palette.blush,
-              borderRadius: '1.25rem',
-              padding: '2rem 2.5rem',
-              minWidth: 320,
-              maxWidth: '90vw',
-              boxShadow: '0 8px 32px rgba(245,87,108,0.13)',
-              border: `2px solid ${palette.errorBorder}`,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1.5rem',
-              alignItems: 'center',
-            }}
-            onClick={e => e.stopPropagation()}
-          >
-            <Trash2 size={32} color={palette.errorText} />
-            <h3 style={{ color: palette.text, fontWeight: 700, fontSize: '1.15rem', margin: 0 }}>Delete Quiz?</h3>
-            <p style={{ color: palette.subtext, fontSize: '1rem', textAlign: 'center', margin: 0 }}>
-              Are you sure you want to delete <b>{quizToDelete.name}</b>? This action cannot be undone.
-            </p>
-            <div style={{ display: 'flex', gap: '1rem', width: '100%', justifyContent: 'center' }}>
-              <Button
-                variant="secondary"
-                onClick={() => setShowDeleteModal(false)}
-                style={{ borderRadius: 9999, padding: '0.75rem 2rem', fontWeight: 600 }}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                onClick={() => handleDeleteQuiz(quizToDelete.id)}
-                style={{ borderRadius: 9999, padding: '0.75rem 2rem', fontWeight: 600, background: palette.errorText, color: '#fff', border: 'none' }}
-              >
-                Delete
-              </Button>
+        <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
+          <div className="delete-modal" onClick={e => e.stopPropagation()}>
+            <div className="delete-modal-content">
+              <Trash2 size={32} className="delete-icon" />
+              <h3>Delete Quiz?</h3>
+              <p>
+                Are you sure you want to delete <strong>{quizToDelete.name}</strong>? 
+                This action cannot be undone.
+              </p>
+              <div className="delete-modal-actions">
+                <Button
+                  variant="secondary"
+                  onClick={() => setShowDeleteModal(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="danger"
+                  onClick={() => handleDeleteQuiz(quizToDelete.id)}
+                >
+                  Delete
+                </Button>
+              </div>
             </div>
           </div>
         </div>
