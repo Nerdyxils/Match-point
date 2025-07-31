@@ -16,13 +16,17 @@ import {
   X,
   Home,
   FileText,
-
-  LogOut
+  LogOut,
+  User,
+  Camera,
+  Edit3,
+  Save,
+  X as XIcon
 } from 'lucide-react';
 import Button from './ui/button';
 import CreateQuizModal from './CreateQuizModal';
 import QuizResultsModal from './QuizResultsModal';
-import { getUserData, getUserQuizzes, deleteQuiz, getQuiz } from '../services/firebase';
+import { getUserQuizzes, deleteQuiz, getQuiz, compressImage, uploadUserProfilePicture, deleteUserProfilePicture } from '../services/firebase';
 import { useAuth } from '../App';
 import '../styles/DashboardPage.css';
 
@@ -37,8 +41,22 @@ export default function DashboardPage() {
   const [copiedQuizId, setCopiedQuizId] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [quizToDelete, setQuizToDelete] = useState(null);
-  const [activeView, setActiveView] = useState('overview'); // overview, create, quizzes
+  const [activeView, setActiveView] = useState('overview'); // overview, create, quizzes, profile
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [lastSaveTime, setLastSaveTime] = useState(0);
+  const [quotaExceeded, setQuotaExceeded] = useState(false);
+  const [offlineMode, setOfflineMode] = useState(false);
+  const [failedImageUrls, setFailedImageUrls] = useState(new Set());
+  const [imageLoadAttempts, setImageLoadAttempts] = useState({});
+  const [profileFormData, setProfileFormData] = useState({
+    firstName: '',
+    lastName: '',
+    age: '',
+    photo: null,
+    photoUrl: ''
+  });
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -48,27 +66,13 @@ export default function DashboardPage() {
           return;
         }
 
-        // Fetch user data from Firebase
-        const userResult = await getUserData(user.uid);
-        
-        if (userResult.success) {
-          updateUserData(userResult.data);
-        } else {
-          // Create default user data if none exists
-          const defaultUserData = {
-            name: user.name,
-            email: user.email || '',
-            subscription: 'free',
-            activeLinks: 0,
-            totalQuizzes: 0,
-            totalResponses: 0,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          };
-          updateUserData(defaultUserData);
+        // Check if we're in offline mode due to quota issues
+        if (quotaExceeded || offlineMode) {
+          setLoading(false);
+          return;
         }
 
-        // Fetch user's quizzes
+        // Fetch user's quizzes with error handling
         const quizzesResult = await getUserQuizzes(user.uid);
         
         if (quizzesResult.success) {
@@ -76,13 +80,75 @@ export default function DashboardPage() {
         }
       } catch (error) {
         console.error('Failed to fetch user data:', error);
+        
+        // Check for quota exceeded or rate limiting errors
+        if (error.code === 'resource-exhausted' || error.message?.includes('quota') || error.message?.includes('429')) {
+          setQuotaExceeded(true);
+          setOfflineMode(true);
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUserData();
-  }, [user, navigate, updateUserData, authUserData]);
+    // Only fetch if we haven't exceeded quota
+    if (!quotaExceeded && !offlineMode) {
+      fetchUserData();
+    } else {
+      setLoading(false);
+    }
+  }, [user, navigate, quotaExceeded, offlineMode]); // Only fetch quizzes, let App.js handle user data
+
+
+
+  // Global error handler for quota exceeded
+  useEffect(() => {
+    const handleGlobalError = (event) => {
+      const error = event.error || event.reason;
+      if (error && (
+        error.code === 'resource-exhausted' || 
+        error.message?.includes('quota') || 
+        error.message?.includes('429') ||
+        error.message?.includes('Quota exceeded')
+      )) {
+        setQuotaExceeded(true);
+        setOfflineMode(true);
+        console.error('Global quota exceeded detected, entering offline mode');
+      }
+    };
+
+    window.addEventListener('error', handleGlobalError);
+    window.addEventListener('unhandledrejection', handleGlobalError);
+
+    return () => {
+      window.removeEventListener('error', handleGlobalError);
+      window.removeEventListener('unhandledrejection', handleGlobalError);
+    };
+  }, []);
+
+  // Helper function to check if we should attempt to load an image
+  const shouldLoadImage = (imageUrl) => {
+    if (!imageUrl) return false;
+    if (failedImageUrls.has(imageUrl)) return false;
+    
+    const attempts = imageLoadAttempts[imageUrl] || 0;
+    return attempts < 3; // Max 3 attempts per image URL
+  };
+
+  // Helper function to record image load failure
+  const recordImageFailure = (imageUrl) => {
+    if (!imageUrl) return;
+    
+    setImageLoadAttempts(prev => ({
+      ...prev,
+      [imageUrl]: (prev[imageUrl] || 0) + 1
+    }));
+    
+    // If we've failed 3 times, mark as permanently failed
+    if ((imageLoadAttempts[imageUrl] || 0) >= 2) {
+      setFailedImageUrls(prev => new Set([...prev, imageUrl]));
+    }
+  };
 
   const handleCreateQuiz = () => {
     setShowCreateModal(true);
@@ -142,12 +208,241 @@ export default function DashboardPage() {
     navigate('/');
   };
 
+  // Profile functions
+  const handleEditProfile = () => {
+    const profile = authUserData?.profile || {};
+    setProfileFormData({
+      firstName: profile.firstName || authUserData?.firstName || '',
+      lastName: profile.lastName || authUserData?.lastName || '',
+      age: profile.age || '',
+      photo: null,
+      photoUrl: profile.photoUrl || authUserData?.photoURL || ''
+    });
+    setIsEditingProfile(true);
+  };
+
+  const handleSaveProfile = async () => {
+    if (isSavingProfile) return; // Prevent multiple saves
+    
+    // Check if we're in offline mode
+    if (quotaExceeded || offlineMode) {
+      alert('Unable to save profile: Service temporarily unavailable due to quota limits. Please try again later.');
+      return;
+    }
+    
+    // Add debounce to prevent rapid saves
+    const now = Date.now();
+    if (now - lastSaveTime < 2000) { // 2 second debounce
+      return;
+    }
+    setLastSaveTime(now);
+    
+    setIsSavingProfile(true);
+    try {
+      // Validate user object has required properties
+      if (!user?.uid) {
+        throw new Error('User UID not available. Please try logging out and back in.');
+      }
+
+      // Check if user data is available
+      if (!authUserData) {
+        throw new Error('User data not loaded. Please refresh the page and try again.');
+      }
+
+      // Validate form data
+      if (!profileFormData.firstName?.trim()) {
+        throw new Error('First name is required.');
+      }
+
+      if (!profileFormData.lastName?.trim()) {
+        throw new Error('Last name is required.');
+      }
+
+      if (!profileFormData.age || parseInt(profileFormData.age) < 18) {
+        throw new Error('Valid age (18+) is required.');
+      }
+      
+      // Check if profile data is too large (base64 images can be very large)
+      const profileDataSize = JSON.stringify(profileFormData).length;
+      if (profileDataSize > 500000) { // 500KB limit
+        throw new Error('Profile data is too large. Please use a smaller image or try again.');
+      }
+
+      // Check if we're trying to save the same data (prevent unnecessary saves)
+      const currentProfile = authUserData?.profile || {};
+      const newProfile = {
+        firstName: profileFormData.firstName,
+        lastName: profileFormData.lastName,
+        age: parseInt(profileFormData.age) || 0,
+        photoUrl: profileFormData.photoUrl
+      };
+
+      // Check if data has actually changed
+      const hasChanged = 
+        currentProfile.firstName !== newProfile.firstName ||
+        currentProfile.lastName !== newProfile.lastName ||
+        currentProfile.age !== newProfile.age ||
+        currentProfile.photoUrl !== newProfile.photoUrl;
+
+      if (!hasChanged) {
+        setIsEditingProfile(false);
+        setProfileFormData({
+          firstName: '',
+          lastName: '',
+          age: '',
+          photo: null,
+          photoUrl: ''
+        });
+        return; // No changes, don't save
+      }
+      
+      // Delete old profile picture if it exists and is different
+      const currentPhotoUrl = authUserData?.profile?.photoUrl || authUserData?.photoURL;
+      if (currentPhotoUrl && currentPhotoUrl !== profileFormData.photoUrl && !currentPhotoUrl.includes('googleusercontent.com')) {
+        await deleteUserProfilePicture(currentPhotoUrl);
+      }
+      
+      const updatedUserData = {
+        ...authUserData,
+        profile: {
+          ...authUserData?.profile,
+          firstName: profileFormData.firstName,
+          lastName: profileFormData.lastName,
+          age: parseInt(profileFormData.age) || 0,
+          photoUrl: profileFormData.photoUrl
+        },
+        updatedAt: new Date().toISOString()
+      };
+      
+      // Only attempt Firebase save if not in offline mode
+      if (!quotaExceeded && !offlineMode) {
+        await updateUserData(updatedUserData);
+      } else {
+        // Save to localStorage as fallback
+        localStorage.setItem('pendingProfileUpdate', JSON.stringify(updatedUserData));
+        alert('Profile saved locally. Changes will sync when service is restored.');
+      }
+      
+      setIsEditingProfile(false);
+      setProfileFormData({
+        firstName: '',
+        lastName: '',
+        age: '',
+        photo: null,
+        photoUrl: ''
+      });
+      
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      
+      // Check for quota/rate limiting errors
+      if (error.code === 'resource-exhausted' || error.message?.includes('quota') || error.message?.includes('429')) {
+        setQuotaExceeded(true);
+        setOfflineMode(true);
+        alert('Service temporarily unavailable due to high usage. Your changes have been saved locally and will sync when service is restored.');
+      } else {
+        alert(`Error saving profile: ${error.message}. Please try again.`);
+      }
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingProfile(false);
+  };
+
+  const handlePhotoUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Check if we're in offline mode
+    if (quotaExceeded || offlineMode) {
+      alert('Image upload temporarily unavailable due to quota limits. Please try again later.');
+      return;
+    }
+
+    let compressedFile;
+    
+    try {
+      // Compress the image
+      compressedFile = await compressImage(file);
+      
+      // Check file size after compression
+      if (compressedFile.size > 1024 * 1024) { // 1MB limit
+        alert('Image is too large. Please use a smaller image (under 1MB).');
+        return;
+      }
+      
+      // Try to upload to Firebase Storage first
+      try {
+        const downloadURL = await uploadUserProfilePicture(compressedFile, user.uid);
+        
+        setProfileFormData(prev => ({
+          ...prev,
+          photo: compressedFile,
+          photoUrl: downloadURL
+        }));
+        return; // Success, exit early
+      } catch (uploadError) {
+        console.error('Firebase Storage upload failed:', uploadError);
+        
+        // Check for quota/rate limiting errors
+        if (uploadError.code === 'resource-exhausted' || uploadError.message?.includes('quota') || uploadError.message?.includes('429')) {
+          setQuotaExceeded(true);
+          setOfflineMode(true);
+          alert('Image upload temporarily unavailable due to high usage. Please try again later.');
+          return;
+        }
+        
+        // If Firebase Storage upload fails, fall back to base64
+        if (uploadError.code === 'storage/unauthorized' || 
+            uploadError.message?.includes('CORS') || 
+            uploadError.message?.includes('ERR_FAILED') ||
+            uploadError.message?.includes('preflight')) {
+          
+          // Immediately fall back to base64 for small images
+          if (compressedFile && compressedFile.size < 200 * 1024) { // Only for images under 200KB
+            const reader = new FileReader();
+            reader.onload = (e) => {
+              const base64Data = e.target.result;
+              setProfileFormData(prev => ({
+                ...prev,
+                photo: compressedFile,
+                photoUrl: base64Data
+              }));
+            };
+            reader.readAsDataURL(compressedFile);
+            return; // Success with fallback
+          } else {
+            alert('Image upload failed due to service restrictions. Please try using a smaller image (under 200KB).');
+          }
+        }
+        
+        // Re-throw if it's not a handled error
+        throw uploadError;
+      }
+    } catch (error) {
+      console.error('Error processing image:', error);
+      alert('Error processing image. Please try again.');
+    }
+  };
+
+  const removePhoto = () => {
+    setProfileFormData(prev => ({
+      ...prev,
+      photo: null,
+      photoUrl: ''
+    }));
+  };
+
   const canCreateQuiz = (!authUserData?.subscription || authUserData?.subscription === 'free') && quizzes.length >= 5;
 
   const menuItems = [
     { id: 'overview', label: 'Overview', icon: Home, description: 'Dashboard stats and welcome' },
     { id: 'create', label: 'Create Quiz', icon: Plus, description: 'Build a new compatibility quiz' },
     { id: 'quizzes', label: 'My Quizzes', icon: FileText, description: 'View and manage your quizzes' },
+    { id: 'profile', label: 'Profile', icon: User, description: 'Manage your profile and preferences' },
   ];
 
   if (loading) {
@@ -163,6 +458,24 @@ export default function DashboardPage() {
 
   return (
     <div className="dashboard-page">
+      {/* Quota Exceeded Banner */}
+      {(quotaExceeded || offlineMode) && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: '#f59e0b',
+          color: 'white',
+          padding: '12px',
+          textAlign: 'center',
+          zIndex: 1000,
+          fontSize: '14px'
+        }}>
+          ⚠️ Service temporarily unavailable due to high usage. Some features may be limited. Please try again later.
+        </div>
+      )}
+      
       {/* Sidebar */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -567,6 +880,218 @@ export default function DashboardPage() {
                             </motion.div>
                           );
                         })}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
+            {activeView === 'profile' && (
+              <motion.div
+                key="profile"
+                className="profile-view"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="profile-section">
+                  <div className="section-header">
+                    <h3 className="section-title">Profile & Preferences</h3>
+                    {!isEditingProfile && (
+                      <Button
+                        variant="primary"
+                        onClick={handleEditProfile}
+                        size="sm"
+                      >
+                        <Edit3 size={16} />
+                        Edit Profile
+                      </Button>
+                    )}
+                  </div>
+
+                  {isEditingProfile ? (
+                    <div className="profile-edit">
+                      <div className="edit-section">
+                        <h5>Profile Information</h5>
+                        <div className="photo-upload-section">
+                          <label className="photo-upload-label">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handlePhotoUpload}
+                              style={{ display: 'none' }}
+                            />
+                            {profileFormData.photoUrl ? (
+                              <div className="photo-preview">
+                                <img 
+                                  src={profileFormData.photoUrl} 
+                                  alt="Profile preview" 
+                                  onLoad={() => console.log('Profile preview loaded successfully')}
+                                  onError={(e) => console.log('Profile preview failed to load:', e)}
+                                />
+                                <button 
+                                  type="button" 
+                                  className="remove-photo-btn"
+                                  onClick={removePhoto}
+                                >
+                                  <XIcon size={16} />
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="photo-upload-placeholder">
+                                <Camera size={24} />
+                                <span>Upload Photo</span>
+                              </div>
+                            )}
+                          </label>
+                        </div>
+                        
+                        <div className="form-row">
+                          <div className="form-group">
+                            <label>First Name</label>
+                            <input
+                              type="text"
+                              value={profileFormData.firstName}
+                              onChange={(e) => setProfileFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                              placeholder="Enter first name"
+                            />
+                          </div>
+                          <div className="form-group">
+                            <label>Last Name</label>
+                            <input
+                              type="text"
+                              value={profileFormData.lastName}
+                              onChange={(e) => setProfileFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                              placeholder="Enter last name"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="form-group">
+                          <label>Age</label>
+                          <input
+                            type="number"
+                            value={profileFormData.age}
+                            onChange={(e) => setProfileFormData(prev => ({ ...prev, age: e.target.value }))}
+                            placeholder="Enter age"
+                            min="18"
+                            max="100"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="edit-actions">
+                        <button 
+                          type="button" 
+                          className="btn-secondary"
+                          onClick={handleCancelEdit}
+                          disabled={isSavingProfile}
+                        >
+                          Cancel
+                        </button>
+                        <button 
+                          type="button" 
+                          className="btn-primary"
+                          onClick={handleSaveProfile}
+                          disabled={isSavingProfile}
+                        >
+                          {isSavingProfile ? (
+                            <>
+                              <div className="animate-spin" style={{ width: '16px', height: '16px', border: '2px solid transparent', borderTop: '2px solid currentColor', borderRadius: '50%' }}></div>
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <Save size={16} />
+                              Save Profile
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="profile-display">
+                      <div className="profile-header">
+                        <div className="profile-photo">
+                          {(() => {
+                            // Simplified image source logic - prioritize Firebase Storage URLs
+                            const photoUrl = authUserData?.profile?.photoUrl || authUserData?.photoURL;
+                            const shouldShow = photoUrl && shouldLoadImage(photoUrl);
+                            
+                            return (
+                              <>
+                                {shouldShow && (
+                                  <img 
+                                    src={photoUrl} 
+                                    alt="Profile" 
+                                    onError={(e) => {
+                                      console.error('Profile image failed to load:', photoUrl);
+                                      recordImageFailure(photoUrl);
+                                      // Simple error handling - just hide the image on error
+                                      e.target.style.display = 'none';
+                                      if (e.target.nextSibling) {
+                                        e.target.nextSibling.style.display = 'flex';
+                                      }
+                                    }}
+                                    onLoad={() => {
+                                      // Remove console.log to reduce noise
+                                    }}
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                  />
+                                )}
+                                <div className="profile-photo-placeholder" style={{ display: shouldShow ? 'none' : 'flex' }}>
+                                  <User size={32} />
+                                </div>
+                              </>
+                            );
+                          })()}
+                        </div>
+                        <div className="profile-info">
+                          <h4 className="profile-name">
+                            {authUserData?.profile?.firstName && authUserData?.profile?.lastName
+                              ? `${authUserData.profile.firstName} ${authUserData.profile.lastName}`
+                              : authUserData?.name || 'User'
+                            }
+                          </h4>
+                          <p className="profile-email">{authUserData?.email}</p>
+                          {authUserData?.profile?.age && (
+                            <p className="profile-age">{authUserData.profile.age} years old</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {authUserData?.preferences && (
+                        <div className="preferences-section">
+                          <h5>Preferences</h5>
+                          <div className="preferences-grid">
+                            {authUserData.preferences.gender && (
+                              <div className="preference-item">
+                                <span className="preference-label">Gender:</span>
+                                <span className="preference-value">{authUserData.preferences.gender}</span>
+                              </div>
+                            )}
+                            {authUserData.preferences.ageRange && (
+                              <div className="preference-item">
+                                <span className="preference-label">Age Range:</span>
+                                <span className="preference-value">
+                                  {authUserData.preferences.ageRange.min} - {authUserData.preferences.ageRange.max}
+                                </span>
+                              </div>
+                            )}
+                            {authUserData.preferences.interests && authUserData.preferences.interests.length > 0 && (
+                              <div className="preference-item">
+                                <span className="preference-label">Interests:</span>
+                                <div className="interests-tags">
+                                  {authUserData.preferences.interests.map((interest, index) => (
+                                    <span key={index} className="interest-tag">{interest}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

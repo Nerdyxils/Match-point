@@ -45,8 +45,9 @@ export const signUpWithEmail = async (email, password, name, profilePicture = nu
       activeLinks: 0,
       totalQuizzes: 0,
       totalResponses: 0,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+      onboardingCompleted: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     });
     
     return { success: true, user };
@@ -70,11 +71,13 @@ export const signInWithGoogle = async () => {
     const userCredential = await signInWithPopup(auth, provider);
     const user = userCredential.user;
     
-    // Check if user exists in Firestore
+    console.log('Google Auth - User UID:', user.uid);
+    
+    // Simple logic: only create user if they don't exist
     const userDoc = await getDoc(doc(db, 'users', user.uid));
     if (!userDoc.exists()) {
       // Create new user document
-      await setDoc(doc(db, 'users', user.uid), {
+      const newUserData = {
         name: user.displayName,
         email: user.email,
         profilePicture: user.photoURL,
@@ -82,17 +85,15 @@ export const signInWithGoogle = async () => {
         activeLinks: 0,
         totalQuizzes: 0,
         totalResponses: 0,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
+        onboardingCompleted: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      await setDoc(doc(db, 'users', user.uid), newUserData);
+      console.log('Google Auth: Created new user with data:', newUserData);
     } else {
-      // Update existing user with latest info
-      await updateDoc(doc(db, 'users', user.uid), {
-        name: user.displayName,
-        email: user.email,
-        profilePicture: user.photoURL,
-        updatedAt: serverTimestamp()
-      });
+      const existingData = userDoc.data();
+      console.log('Google Auth: Existing user found with data:', existingData);
     }
     
     return { success: true, user };
@@ -151,25 +152,7 @@ export const updateUserProfilePicture = async (userId, file) => {
   }
 };
 
-export const deleteUserProfilePicture = async (userId, currentPictureURL) => {
-  try {
-    // Delete from Storage if URL exists
-    if (currentPictureURL) {
-      const storageRef = ref(storage, currentPictureURL);
-      await deleteObject(storageRef);
-    }
-    
-    // Remove from user document
-    await updateDoc(doc(db, 'users', userId), { 
-      profilePicture: null,
-      updatedAt: serverTimestamp()
-    });
-    
-    return { success: true };
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-};
+
 
 // Quiz functions
 export const createQuiz = async (userId, questions, quizName, quizImage = null) => {
@@ -393,13 +376,14 @@ export const validateImageFile = (file) => {
   return { valid: true };
 };
 
-export const compressImage = async (file, maxWidth = 800, quality = 0.8) => {
+export const compressImage = async (file, maxWidth = 400, quality = 0.6) => {
   return new Promise((resolve) => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const img = new Image();
     
     img.onload = () => {
+      // More aggressive compression for profile pictures
       const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
       canvas.width = img.width * ratio;
       canvas.height = img.height * ratio;
@@ -507,3 +491,64 @@ export const deleteQuiz = async (quizId) => {
 };
 
 export { auth, db }; 
+
+// Firebase Storage functions for profile pictures
+export const uploadUserProfilePicture = async (file, userId) => {
+  try {
+    const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    const storageRef = ref(storage, `profile-pictures/${userId}/${fileName}`);
+    
+    // Upload the file with metadata
+    const metadata = {
+      contentType: file.type,
+      cacheControl: 'public, max-age=31536000',
+    };
+    
+    const snapshot = await uploadBytes(storageRef, file, metadata);
+    
+    // Get the download URL
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    
+    return downloadURL;
+  } catch (error) {
+    console.error('Error uploading profile picture:', error);
+    throw error;
+  }
+};
+
+export const deleteUserProfilePicture = async (imageUrl) => {
+  try {
+    if (!imageUrl || imageUrl.includes('googleusercontent.com')) {
+      // Skip deletion for Google profile images or empty URLs
+      return;
+    }
+
+
+
+    // If we receive a full HTTP(S) download URL, convert it to the corresponding
+    // Storage path ("profile-pictures/uid/filename.ext") so that Security Rules
+    // are evaluated against the correct location. Using the raw download URL in
+    // ref() sometimes results in a generic "storage/unauthorized" error.
+    let imageRef;
+    if (imageUrl.startsWith('http')) {
+      try {
+        const decoded = decodeURIComponent(imageUrl);
+        // URL format: https://firebasestorage.googleapis.com/v0/b/<bucket>/o/<FULL_PATH>?alt=media&token=...
+        const pathStart = decoded.indexOf('/o/') + 3;
+        const pathEnd = decoded.indexOf('?', pathStart);
+        const fullPath = decoded.substring(pathStart, pathEnd);
+        imageRef = ref(storage, fullPath);
+      } catch (parseErr) {
+        console.warn('Failed to parse storage path from URL, falling back to direct ref:', parseErr);
+        imageRef = ref(storage, imageUrl);
+      }
+    } else {
+      imageRef = ref(storage, imageUrl);
+    }
+
+    await deleteObject(imageRef);
+  } catch (error) {
+    console.error('Error deleting profile picture:', error);
+    // Suppress deletion errors so they don't interrupt the user flow
+  }
+}; 

@@ -2,8 +2,11 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     // Users can upload and manage their own profile pictures
+    // Profile pictures can be read by anyone (to display avatars),
+    // but only the owner (same auth.uid) can upload / overwrite / delete
     match /profile-pictures/{userId}/{allPaths=**} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
     }
     
     // Users can upload and manage their own quiz images

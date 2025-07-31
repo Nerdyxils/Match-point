@@ -63,7 +63,7 @@ export default function NameInputPage() {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      navigate('/dashboard');
+      navigate('/onboarding');
     } catch (error) {
       console.error('Error saving name:', error);
     } finally {
